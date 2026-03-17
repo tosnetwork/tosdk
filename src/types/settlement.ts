@@ -25,16 +25,22 @@ export type SettlementCallback = {
   txHash: Hex
   callbackType: string
   targetAddress: Address
+  callbackData: Hex
+  policyHash: Hex
   maxGas: number
-  status: string
   createdAt: number
   expiresAt: number
+  executedAt: number
+  status: string
+  creator: Address
 }
 
 export type AsyncFulfillment = {
   fulfillmentId: string
   originalTxHash: Hex
   fulfillerAddress: Address
+  resultData: Hex
+  policyCheck: boolean
   fulfilledAt: number
-  receiptRef: string
+  receiptRef: Hex
 }

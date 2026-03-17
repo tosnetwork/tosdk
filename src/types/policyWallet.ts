@@ -4,7 +4,7 @@ export type SpendCaps = {
   dailyLimit: string
   singleTxLimit: string
   dailySpent: string
-  spendDay: string
+  spendDay: number
 }
 
 export type TerminalPolicy = {
@@ -15,6 +15,7 @@ export type TerminalPolicy = {
 }
 
 export type DelegateAuth = {
+  delegate: Address
   allowance: string
   expiry: number
   active: boolean
@@ -29,7 +30,6 @@ export type RecoveryState = {
 }
 
 export type PolicyWalletSchemaInfo = {
-  boundaryVersion: string
   schemaVersion: string
-  features: string[]
+  namespace: string
 }

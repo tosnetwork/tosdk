@@ -3,7 +3,7 @@ import type { Hex } from './misc.js'
 
 export const BOUNDARY_SCHEMA_VERSION = '0.1.0' as const
 
-export type TerminalClassName =
+export type TerminalClass =
   | 'app'
   | 'card'
   | 'pos'
@@ -11,6 +11,9 @@ export type TerminalClassName =
   | 'kiosk'
   | 'robot'
   | 'api'
+
+/** @deprecated Use {@link TerminalClass} instead. */
+export type TerminalClassName = TerminalClass
 
 export type TrustTier = 0 | 1 | 2 | 3 | 4
 
@@ -53,61 +56,105 @@ export type ApprovalStatus =
 
 export type ReceiptStatus = 'success' | 'failed' | 'reverted'
 
+export type IntentConstraints = {
+  maxValue?: string
+  allowedRecipients?: string[]
+  requiredTrustTier?: TrustTier
+  maxGas?: number
+  deadline?: number
+}
+
 export type IntentEnvelope = {
   intentId: string
-  kind: string
+  schemaVersion: string
+  action: string
   requester: Address
-  terminalClass: TerminalClassName
+  actorAgentId: Address
+  terminalClass: TerminalClass
   trustTier: TrustTier
-  payload: Hex
-  maxGas: number
-  maxValue: string
-  expiry: number
-  status: IntentStatus
+  params: Record<string, unknown>
+  constraints?: IntentConstraints
   createdAt: number
+  expiresAt: number
+  status: IntentStatus
+}
+
+export type RouteStep = {
+  target: Address
+  action: string
+  value?: string
+  artifactRef?: string
 }
 
 export type PlanRecord = {
   planId: string
   intentId: string
-  steps: readonly PlanStep[]
+  schemaVersion: string
+  provider: Address
+  sponsor?: Address
+  artifactRef?: string
+  abiRef?: string
+  policyHash: string
+  sponsorPolicyHash?: string
+  effectsHash?: string
   estimatedGas: number
   estimatedValue: string
-  status: PlanStatus
+  route?: RouteStep[]
+  fallbackPlanId?: string
   createdAt: number
   expiresAt: number
+  status: PlanStatus
 }
 
-export type PlanStep = {
-  stepIndex: number
-  action: string
-  target: Address
-  value: string
-  calldata: Hex
-  agentRole: AgentRole
+export type ApprovalScope = {
+  maxValue?: string
+  allowedActions?: string[]
+  allowedTargets?: string[]
+  terminalClasses?: TerminalClass[]
+  minTrustTier?: TrustTier
 }
 
 export type ApprovalRecord = {
   approvalId: string
-  planId: string
   intentId: string
+  planId: string
+  schemaVersion: string
   approver: Address
-  agentRole: AgentRole
-  status: ApprovalStatus
-  grantedAt: number
+  approverRole: AgentRole
+  accountId: Address
+  terminalClass: TerminalClass
+  trustTier: TrustTier
+  policyHash: string
+  approvalProofRef?: string
+  scope?: ApprovalScope
+  createdAt: number
   expiresAt: number
-  signature: Hex
+  status: ApprovalStatus
 }
 
 export type ExecutionReceipt = {
   receiptId: string
-  planId: string
   intentId: string
+  planId: string
+  approvalId: string
+  schemaVersion: string
   txHash: Hex
-  executor: Address
-  status: ReceiptStatus
-  gasUsed: number
   blockNumber: number
+  blockHash: Hex
+  from: Address
+  to: Address
+  sponsor?: Address
+  actorAgentId: Address
+  terminalClass: TerminalClass
+  trustTier: TrustTier
+  policyHash: string
+  sponsorPolicyHash?: string
+  artifactRef?: string
+  effectsHash?: string
+  gasUsed: number
+  value: string
+  receiptStatus: ReceiptStatus
+  proofRef?: string
+  receiptRef?: string
   settledAt: number
-  resultHash: Hex
 }

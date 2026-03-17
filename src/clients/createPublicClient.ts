@@ -600,19 +600,19 @@ export function createPublicClient(
 
     // -- Gateway --
     async getGatewayConfig({ agent }) {
-      return request<GatewayConfig>('gateway_getConfig', [
+      return request<GatewayConfig>('gateway_getGatewayConfig', [
         getAddress(agent),
       ])
     },
     async isGatewayActive({ agent }) {
-      return request<boolean>('gateway_isActive', [
+      return request<boolean>('gateway_isGatewayActive', [
         getAddress(agent),
       ])
     },
 
     // -- Audit Receipt --
     async getAuditMeta({ txHash }) {
-      return request<AuditMeta>('auditReceipt_getMeta', [txHash])
+      return request<AuditMeta>('auditReceipt_getAuditMeta', [txHash])
     },
     async getSessionProof({ txHash }) {
       return request<SessionProof>('auditReceipt_getSessionProof', [txHash])
@@ -625,14 +625,14 @@ export function createPublicClient(
       ])
     },
     async getAsyncFulfillment({ fulfillmentId }) {
-      return request<AsyncFulfillment>('settlement_getAsyncFulfillment', [
+      return request<AsyncFulfillment>('settlement_getFulfillment', [
         fulfillmentId,
       ])
     },
 
     // -- Schema --
     async getBoundaryVersion() {
-      return request<string>('tos_getBoundaryVersion')
+      return request<string>('policyWallet_getBoundaryVersion')
     },
   }
 }

@@ -17,14 +17,17 @@ export {
 export type {
   AgentRole,
   ApprovalRecord,
+  ApprovalScope,
   ApprovalStatus,
   ExecutionReceipt,
+  IntentConstraints,
   IntentEnvelope,
   IntentStatus,
   PlanRecord,
   PlanStatus,
-  PlanStep,
   ReceiptStatus,
+  RouteStep,
+  TerminalClass as BoundaryTerminalClass,
   TerminalClassName,
   TrustTier as BoundaryTrustTier,
 } from './types/boundary.js'
