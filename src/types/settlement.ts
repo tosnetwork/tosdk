@@ -19,3 +19,22 @@ export type SettlementReceipt = {
   createdAt: string
   metadata?: Record<string, unknown> | undefined
 }
+
+export type SettlementCallback = {
+  callbackId: string
+  txHash: Hex
+  callbackType: string
+  targetAddress: Address
+  maxGas: number
+  status: string
+  createdAt: number
+  expiresAt: number
+}
+
+export type AsyncFulfillment = {
+  fulfillmentId: string
+  originalTxHash: Hex
+  fulfillerAddress: Address
+  fulfilledAt: number
+  receiptRef: string
+}

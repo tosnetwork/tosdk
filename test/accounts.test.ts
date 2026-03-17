@@ -118,7 +118,7 @@ describe('native signing', () => {
         },
       }),
     ).resolves.toBe(
-      '0x00f8e982068280825208a0482845ef5f7df661eb71148970997970c51812dc3a010c7d01b50e0d17dc79c8880de0b6b3a764000080c0a0c1ffd3cfee2d9e5cd67643f8f39fd6e51aad88f6f4ce6ab8827279cfffb9226689736563703235366b31a00000000000000000000000000000000000000000000000000000000000000000808080a000000000000000000000000000000000000000000000000000000000000000001ca0c67ea69ee65e3a4de2e7f92ffd604f1ce72d96f910717498f6bd14b62305501aa0741a202b6ce4fa608de4c3d74f0d4c8be8c0ba928db6d0d3c6548f2536daa7ab808080',
+      '0x00f8eb82068280825208a0482845ef5f7df661eb71148970997970c51812dc3a010c7d01b50e0d17dc79c8880de0b6b3a764000080c0a0c1ffd3cfee2d9e5cd67643f8f39fd6e51aad88f6f4ce6ab8827279cfffb9226689736563703235366b31a00000000000000000000000000000000000000000000000000000000000000000808080a0000000000000000000000000000000000000000000000000000000000000000080801ca0e7b257d4b2c2e59684d70da4ea1562363009da7ce3af5a0b2f9999c29494f6aca0176fd7346855f53b3f74c9302d409c5d4bb4e9691924434fc05b48c5498d35c2808080',
     )
   })
 
@@ -191,8 +191,71 @@ describe('native signing', () => {
         },
       ),
     ).toBe(
-      '0x00f8ae82068200825208a0482845ef5f7df661eb71148970997970c51812dc3a010c7d01b50e0d17dc79c87b80c0a0c1ffd3cfee2d9e5cd67643f8f39fd6e51aad88f6f4ce6ab8827279cfffb9226689736563703235366b31a0f5a7a1de5c98f3df76fc2e153c44cdddb6a900fa2b585dd299e03d12fa4293bc89736563703235366b3107846b49d200a01111111111111111111111111111111111111111111111111111111111111111010102000304',
+      '0x00f8b082068200825208a0482845ef5f7df661eb71148970997970c51812dc3a010c7d01b50e0d17dc79c87b80c0a0c1ffd3cfee2d9e5cd67643f8f39fd6e51aad88f6f4ce6ab8827279cfffb9226689736563703235366b31a0f5a7a1de5c98f3df76fc2e153c44cdddb6a900fa2b585dd299e03d12fa4293bc89736563703235366b3107846b49d200a011111111111111111111111111111111111111111111111111111111111111118080010102000304',
     )
+  })
+
+  test('serializeTransaction encodes terminalClass and trustTier when set', () => {
+    const withFields = serializeTransaction({
+      chainId: 1666,
+      from: nativeAccounts[0]!.address,
+      gas: 21000n,
+      nonce: 0n,
+      signerType: 'secp256k1',
+      to: nativeAccounts[1]!.address,
+      value: 0n,
+      terminalClass: 2,
+      trustTier: 3,
+    })
+
+    const withoutFields = serializeTransaction({
+      chainId: 1666,
+      from: nativeAccounts[0]!.address,
+      gas: 21000n,
+      nonce: 0n,
+      signerType: 'secp256k1',
+      to: nativeAccounts[1]!.address,
+      value: 0n,
+    })
+
+    // Both should be valid native envelopes
+    expect(withFields.startsWith('0x00')).toBe(true)
+    expect(withoutFields.startsWith('0x00')).toBe(true)
+
+    // The one with fields set should be different (non-empty encoding)
+    expect(withFields).not.toBe(withoutFields)
+
+    // The serialized outputs differ because non-zero values encode differently
+    // than the empty 0x80 placeholders used for undefined fields
+    expect(withFields.length).toBeGreaterThanOrEqual(withoutFields.length)
+  })
+
+  test('serializeTransaction omits terminalClass and trustTier when zero', () => {
+    const withZero = serializeTransaction({
+      chainId: 1666,
+      from: nativeAccounts[0]!.address,
+      gas: 21000n,
+      nonce: 0n,
+      signerType: 'secp256k1',
+      to: nativeAccounts[1]!.address,
+      value: 0n,
+      terminalClass: 0,
+      trustTier: 0,
+    })
+
+    const withoutFields = serializeTransaction({
+      chainId: 1666,
+      from: nativeAccounts[0]!.address,
+      gas: 21000n,
+      nonce: 0n,
+      signerType: 'secp256k1',
+      to: nativeAccounts[1]!.address,
+      value: 0n,
+    })
+
+    // zero encodes as 0x80 (RLP for empty/zero), same as undefined
+    // Both should produce identical output since 0 → '0x' → 0x80
+    expect(withZero).toBe(withoutFields)
   })
 
   test('signTypedData supports 32-byte addresses', async () => {

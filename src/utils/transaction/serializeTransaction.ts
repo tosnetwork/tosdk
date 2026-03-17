@@ -84,7 +84,9 @@ function serializeTransactionNative(
     sponsorNonce,
     sponsorPolicyHash,
     sponsorSignerType,
+    terminalClass,
     to,
+    trustTier,
     value,
   } = transaction
 
@@ -105,6 +107,8 @@ function serializeTransactionNative(
     toMinimalQuantityHex(sponsorNonce),
     toMinimalQuantityHex(sponsorExpiry),
     sponsorPolicyHash ?? zeroHash,
+    toOptionalUint8Hex(terminalClass),
+    toOptionalUint8Hex(trustTier),
     ...toNativeSignatureArray(executionSignature(signature)),
     ...toNativeSignatureArray(sponsorSignature(signature), true),
   ]
@@ -128,6 +132,11 @@ function toNativeSignatureArray(
     rlpHex(signature.r),
     rlpHex(signature.s),
   ]
+}
+
+function toOptionalUint8Hex(value: number | undefined): Hex {
+  if (!value) return '0x'
+  return rlpHex(numberToHex(value))
 }
 
 function toMinimalQuantityHex(value: number | bigint | undefined): Hex {

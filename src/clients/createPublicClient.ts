@@ -71,6 +71,15 @@ import type {
   PrivTransferParameters,
   PrivUnshieldParameters,
 } from '../types/privacy.js'
+import type { AuditMeta, SessionProof } from '../types/auditReceipt.js'
+import type { GatewayConfig } from '../types/gateway.js'
+import type {
+  DelegateAuth,
+  RecoveryState,
+  SpendCaps,
+  TerminalPolicy,
+} from '../types/policyWallet.js'
+import type { AsyncFulfillment, SettlementCallback } from '../types/settlement.js'
 import { type NumberToHexErrorType, numberToHex } from '../utils/encoding/toHex.js'
 import { createTransport, http } from '../transports/index.js'
 import { encodePackageCallData } from '../utils/contract/encodePackageCallData.js'
@@ -548,6 +557,82 @@ export function createPublicClient(
     },
     async txpoolInspect() {
       return request<TxPoolInspect>('txpool_inspect')
+    },
+
+    // -- Policy Wallet --
+    async getPolicyWalletSpendCaps({ account }) {
+      return request<SpendCaps>('policyWallet_getSpendCaps', [
+        getAddress(account),
+      ])
+    },
+    async getPolicyWalletTerminalPolicy({ account, terminalClass }) {
+      return request<TerminalPolicy>('policyWallet_getTerminalPolicy', [
+        getAddress(account),
+        numberToHex(terminalClass),
+      ])
+    },
+    async getPolicyWalletDelegateAuth({ account, delegate }) {
+      return request<DelegateAuth>('policyWallet_getDelegateAuth', [
+        getAddress(account),
+        getAddress(delegate),
+      ])
+    },
+    async getPolicyWalletRecoveryState({ account }) {
+      return request<RecoveryState>('policyWallet_getRecoveryState', [
+        getAddress(account),
+      ])
+    },
+    async isPolicyWalletSuspended({ account }) {
+      return request<boolean>('policyWallet_isSuspended', [
+        getAddress(account),
+      ])
+    },
+    async getPolicyWalletOwner({ account }) {
+      return request<Address>('policyWallet_getOwner', [
+        getAddress(account),
+      ])
+    },
+    async getPolicyWalletGuardian({ account }) {
+      return request<Address>('policyWallet_getGuardian', [
+        getAddress(account),
+      ])
+    },
+
+    // -- Gateway --
+    async getGatewayConfig({ agent }) {
+      return request<GatewayConfig>('gateway_getConfig', [
+        getAddress(agent),
+      ])
+    },
+    async isGatewayActive({ agent }) {
+      return request<boolean>('gateway_isActive', [
+        getAddress(agent),
+      ])
+    },
+
+    // -- Audit Receipt --
+    async getAuditMeta({ txHash }) {
+      return request<AuditMeta>('auditReceipt_getMeta', [txHash])
+    },
+    async getSessionProof({ txHash }) {
+      return request<SessionProof>('auditReceipt_getSessionProof', [txHash])
+    },
+
+    // -- Settlement --
+    async getSettlementCallback({ callbackId }) {
+      return request<SettlementCallback>('settlement_getCallback', [
+        callbackId,
+      ])
+    },
+    async getAsyncFulfillment({ fulfillmentId }) {
+      return request<AsyncFulfillment>('settlement_getAsyncFulfillment', [
+        fulfillmentId,
+      ])
+    },
+
+    // -- Schema --
+    async getBoundaryVersion() {
+      return request<string>('tos_getBoundaryVersion')
     },
   }
 }

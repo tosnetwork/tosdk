@@ -10,6 +10,32 @@ export {
   toAccount,
 } from './accounts/index.js'
 export type { Address } from './types/address.js'
+export type { AuditMeta, SessionProof } from './types/auditReceipt.js'
+export {
+  BOUNDARY_SCHEMA_VERSION,
+} from './types/boundary.js'
+export type {
+  AgentRole,
+  ApprovalRecord,
+  ApprovalStatus,
+  ExecutionReceipt,
+  IntentEnvelope,
+  IntentStatus,
+  PlanRecord,
+  PlanStatus,
+  PlanStep,
+  ReceiptStatus,
+  TerminalClassName,
+  TrustTier as BoundaryTrustTier,
+} from './types/boundary.js'
+export type { GatewayConfig } from './types/gateway.js'
+export type {
+  DelegateAuth,
+  PolicyWalletSchemaInfo,
+  RecoveryState,
+  SpendCaps,
+  TerminalPolicy,
+} from './types/policyWallet.js'
 export type {
   AgentCardResponse,
   AgentDirectorySearchParams,
@@ -95,6 +121,8 @@ export type {
   StorageRenewRequest,
 } from './types/storage.js'
 export type {
+  AsyncFulfillment,
+  SettlementCallback,
   SettlementKind,
   SettlementReceipt,
 } from './types/settlement.js'
@@ -108,11 +136,17 @@ export type {
   PrivUnshieldParameters,
 } from './types/privacy.js'
 export type {
+  TerminalClass,
   TransactionSignatureBundle,
   TransactionSerializable,
   TransactionSerializableNative,
   TransactionSerialized,
   TransactionType,
+  TrustTier,
+} from './types/transaction.js'
+export {
+  TerminalClassLabel,
+  TrustTierLabel,
 } from './types/transaction.js'
 export type {
   AccessListItem,

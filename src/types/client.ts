@@ -52,6 +52,15 @@ import type {
   TxPoolInspect,
   TxPoolStatus,
 } from './txpool.js'
+import type { AuditMeta, SessionProof } from './auditReceipt.js'
+import type { GatewayConfig } from './gateway.js'
+import type {
+  DelegateAuth,
+  RecoveryState,
+  SpendCaps,
+  TerminalPolicy,
+} from './policyWallet.js'
+import type { AsyncFulfillment, SettlementCallback } from './settlement.js'
 
 export type BlockTag =
   | 'latest'
@@ -477,7 +486,6 @@ export type PublicClient = {
   getValidators(parameters?: GetValidatorsParams): Promise<readonly Address[]>
   getValidator(parameters: GetValidatorParams): Promise<ValidatorInfo>
   getEpochInfo(parameters?: GetEpochInfoParams): Promise<EpochInfo>
-  // Filter system
   // Agent Discovery (read-only)
   agentDiscoveryInfo(): Promise<AgentDiscoveryInfo>
   agentDiscoverySearch(parameters: AgentSearchParams): Promise<readonly AgentSearchResult[]>
@@ -524,6 +532,54 @@ export type PublicClient = {
   txpoolContentFrom(parameters: { address: Address }): Promise<TxPoolContentFrom>
   txpoolStatus(): Promise<TxPoolStatus>
   txpoolInspect(): Promise<TxPoolInspect>
+
+  // -- Policy Wallet --
+  getPolicyWalletSpendCaps(parameters: {
+    account: Address
+  }): Promise<SpendCaps>
+  getPolicyWalletTerminalPolicy(parameters: {
+    account: Address
+    terminalClass: number
+  }): Promise<TerminalPolicy>
+  getPolicyWalletDelegateAuth(parameters: {
+    account: Address
+    delegate: Address
+  }): Promise<DelegateAuth>
+  getPolicyWalletRecoveryState(parameters: {
+    account: Address
+  }): Promise<RecoveryState>
+  isPolicyWalletSuspended(parameters: {
+    account: Address
+  }): Promise<boolean>
+  getPolicyWalletOwner(parameters: {
+    account: Address
+  }): Promise<Address>
+  getPolicyWalletGuardian(parameters: {
+    account: Address
+  }): Promise<Address>
+
+  // -- Gateway --
+  getGatewayConfig(parameters: {
+    agent: Address
+  }): Promise<GatewayConfig>
+  isGatewayActive(parameters: {
+    agent: Address
+  }): Promise<boolean>
+
+  // -- Audit Receipt --
+  getAuditMeta(parameters: { txHash: Hex }): Promise<AuditMeta>
+  getSessionProof(parameters: { txHash: Hex }): Promise<SessionProof>
+
+  // -- Settlement --
+  getSettlementCallback(parameters: {
+    callbackId: string
+  }): Promise<SettlementCallback>
+  getAsyncFulfillment(parameters: {
+    fulfillmentId: string
+  }): Promise<AsyncFulfillment>
+
+  // -- Schema --
+  getBoundaryVersion(): Promise<string>
 }
 
 export type WalletClientConfig = PublicClientConfig & {

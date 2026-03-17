@@ -18,6 +18,29 @@ export type TransactionSerializableNative = {
   sponsorNonce?: number | bigint | undefined
   sponsorExpiry?: number | bigint | undefined
   sponsorPolicyHash?: Hex | undefined
+  terminalClass?: number | undefined
+  trustTier?: number | undefined
+}
+
+export type TerminalClass = 0 | 1 | 2 | 3 | 4 | 5 | 6
+export type TrustTier = 0 | 1 | 2 | 3 | 4
+
+export const TerminalClassLabel: Record<number, string> = {
+  0: 'app',
+  1: 'card',
+  2: 'pos',
+  3: 'voice',
+  4: 'kiosk',
+  5: 'robot',
+  6: 'api',
+}
+
+export const TrustTierLabel: Record<number, string> = {
+  0: 'untrusted',
+  1: 'low',
+  2: 'medium',
+  3: 'high',
+  4: 'full',
 }
 
 export type TransactionSerializable = TransactionSerializableNative
