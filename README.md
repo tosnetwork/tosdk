@@ -45,7 +45,88 @@ pnpm add tosdk@npm:@tosnetwork/tosdk
 - High-level operation surfaces for delegated execution, evidence, operator control, and proof markets
 - Schema validation and drift detection for provider and operator data
 - Package (contract) deployment, calling, and lease management
+- Policy wallet queries for spend caps, terminal policies, and account rules
+- Audit receipt, session proof, gateway config, and settlement callback queries
+- Terminal context fields (`terminalClass`, `trustTier`) on transactions
+- Boundary types for cross-system integration (IntentEnvelope, PlanRecord, ApprovalRecord, ExecutionReceipt)
 - Native-only tests for accounts, signing, encoding, chains, clients, and utilities
+
+## Policy Wallet Queries
+
+The public client exposes 7 RPC methods for querying policy wallet state. These
+let applications and agents read spend caps, terminal policies, escalation
+rules, and account constraints without parsing raw contract storage.
+
+```ts
+const caps = await publicClient.getPolicyWalletSpendCaps({ account: '0x...' })
+const policy = await publicClient.getPolicyWalletTerminalPolicy({ account: '0x...', terminalClass: 1 })
+```
+
+Available methods:
+
+- `getPolicyWalletSpendCaps({ account })` — current spend caps by token and period
+- `getPolicyWalletTerminalPolicy({ account, terminalClass })` — policy rules for a terminal class
+- `getPolicyWalletEscalationRules({ account })` — escalation thresholds and approver list
+- `getPolicyWalletAccountType({ account })` — account type (individual, merchant, institutional, custodial)
+- `getPolicyWalletTrustTier({ account, terminalClass })` — effective trust tier for a terminal
+- `getPolicyWalletDelegates({ account })` — active delegates and their permission scopes
+- `getPolicyWalletActivePolicy({ account })` — full active policy document
+
+## Audit and Settlement
+
+Query audit receipts, session proofs, gateway configuration, and settlement
+callbacks through the public client:
+
+- `getAuditReceipt({ intentId })` — fetch the audit receipt for a completed intent
+- `getSessionProof({ sessionId })` — fetch a cryptographic session proof for a terminal session
+- `getGatewayConfig({ gatewayId })` — read the current gateway routing configuration
+- `getSettlementCallback({ settlementId })` — query the status and payload of a settlement callback
+
+These methods support compliance tooling, dispute resolution, and cross-system
+audit verification.
+
+## Terminal Context in Transactions
+
+Transactions can carry terminal context so that policy wallets and settlement
+systems know which device class originated the action:
+
+```ts
+const hash = await walletClient.sendTransaction({
+  to: '0x...',
+  value: 1_000_000n,
+  terminalClass: 2,  // POS
+  trustTier: 2,       // medium
+})
+```
+
+The `terminalClass` field identifies the originating device (0 = mobile app,
+1 = NFC card, 2 = POS, 3 = voice, 4 = kiosk, 5 = robot API). The `trustTier`
+field (0 = high, 1 = medium, 2 = low) determines which policy rules apply.
+When omitted, the node uses the account's default terminal class and trust tier.
+
+## Boundary Types
+
+The SDK exports boundary types for cross-system integration between intent
+pipelines, plan engines, approval workflows, and execution runtimes:
+
+- `IntentEnvelope` — the canonical wrapper for a user or agent intent, including action type, parameters, and metadata
+- `PlanRecord` — the execution plan produced by the pipeline, including selected sponsor, route, estimated fees, and policy checks
+- `ApprovalRecord` — the approval decision (auto-approved, escalated, or rejected) with approver identity and timestamp
+- `ExecutionReceipt` — the final receipt after execution, including transaction hash, settlement status, and audit journal reference
+
+Import them from the main entry point:
+
+```ts
+import type {
+  IntentEnvelope,
+  PlanRecord,
+  ApprovalRecord,
+  ExecutionReceipt,
+} from 'tosdk'
+```
+
+These types are designed to be serialized across process boundaries and stored
+in audit journals.
 
 ## Module Entry Points
 
