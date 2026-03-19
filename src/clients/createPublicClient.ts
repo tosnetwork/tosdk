@@ -707,9 +707,30 @@ export function createPublicClient(
       ])
     },
 
-    // -- Schema --
+    // -- Schema / Version --
     async getBoundaryVersion() {
       return request<string>('policyWallet_getBoundaryVersion')
+    },
+    async getGatewayBoundaryVersion() {
+      return request<string>('gateway_getBoundaryVersion')
+    },
+    async getAuditReceiptBoundaryVersion() {
+      return request<string>('auditReceipt_getBoundaryVersion')
+    },
+    async getSettlementBoundaryVersion() {
+      return request<string>('settlement_getBoundaryVersion')
+    },
+    async getPolicyWalletSchemaVersion() {
+      return request<{ schema_version: string; namespace: string }>('policyWallet_getSchemaVersion')
+    },
+    async getGatewaySchemaVersion() {
+      return request<{ schema_version: string; namespace: string }>('gateway_getSchemaVersion')
+    },
+    async getAuditReceiptSchemaVersion() {
+      return request<{ schema_version: string; namespace: string }>('auditReceipt_getSchemaVersion')
+    },
+    async getSettlementSchemaVersion() {
+      return request<{ schema_version: string; namespace: string }>('settlement_getSchemaVersion')
     },
   }
 }

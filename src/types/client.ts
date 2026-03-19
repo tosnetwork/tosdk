@@ -599,8 +599,15 @@ export type PublicClient = {
   tnsResolve(parameters: { name: string }): Promise<TNSResolveResult>
   tnsReverse(parameters: { address: Address }): Promise<TNSReverseResult>
 
-  // -- Schema --
+  // -- Schema / Version --
   getBoundaryVersion(): Promise<string>
+  getGatewayBoundaryVersion(): Promise<string>
+  getAuditReceiptBoundaryVersion(): Promise<string>
+  getSettlementBoundaryVersion(): Promise<string>
+  getPolicyWalletSchemaVersion(): Promise<{ schema_version: string; namespace: string }>
+  getGatewaySchemaVersion(): Promise<{ schema_version: string; namespace: string }>
+  getAuditReceiptSchemaVersion(): Promise<{ schema_version: string; namespace: string }>
+  getSettlementSchemaVersion(): Promise<{ schema_version: string; namespace: string }>
 }
 
 export type WalletClientConfig = PublicClientConfig & {
