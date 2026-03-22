@@ -55,12 +55,41 @@ export type {
   AgentSearchResult,
 } from './types/agent.js'
 export type {
+  AgentBundleProfile,
+  AgentContractProfile,
+  AgentIdentityInfo,
+  CapabilityInfo,
+  DelegationInfo,
+  DeployedCodeInfo,
+  NamespaceGovernanceInfo,
+  PackageInfo,
+  PublisherInfo,
+  SettlementPolicyInfo,
+  TOLAgentPackageInfo,
+  TOLArtifactInfo,
+  TOLContractMetadata,
+  TOLDiscoveryManifest,
+  TOLPackageContractInfo,
+  TOLPackageInfo,
+  VerificationClaimInfo,
+  VerifierInfo,
+} from './types/protocol.js'
+export type {
   AgentProviderSelectionDiagnostics,
   AgentProviderSelectionPreferences,
   DiscoveredAgentProvider,
   PreferredAgentProviderResolution,
   TrustedDiscoveredAgentProvider,
 } from './surfaces/agentDiscovery.js'
+export type {
+  AgentRuntimeSurface,
+  AgentSurfaceSelectionDiagnostics,
+  AgentSurfaceSelectionPreferences,
+  DiscoveredAgentSurface,
+  SearchResultSurface,
+  SettlementRuntimeSurface,
+  TrustedSearchResultSurface,
+} from './surfaces/agentRuntime.js'
 export type {
   ArtifactAnchorRecord,
   ArtifactAnchorSummary,
@@ -415,6 +444,59 @@ export {
   inspectSettlementEffect,
   type RuntimeSettlementSurface,
 } from './surfaces/runtimeSettlement.js'
+
+export {
+  balanceAt,
+  blockByHash,
+  blockByNumber,
+  callContract,
+  callContractAtHash,
+  callContractWithOverrides,
+  codeAt,
+  filterLogs,
+  headerByHash,
+  headerByNumber,
+  networkId,
+  nonceAt,
+  peerCount,
+  pendingBalanceAt,
+  pendingCallContract,
+  pendingCodeAt,
+  pendingNonceAt,
+  pendingStorageAt,
+  pendingTransactionCount,
+  storageAt,
+  subscribeFilterLogs,
+  subscribeNewHead,
+  suggestGasTipCap,
+  syncProgress,
+  transactionByHash,
+  transactionCount,
+  transactionInBlock,
+  transactionReceipt,
+  transactionSender,
+} from './surfaces/goClientParity.js'
+
+export {
+  getAgentRuntimeSurface,
+  getDiscoveredAgentSurface,
+  getRuntimeReceiptSurface,
+  getSettlementEffectSurface,
+  searchDiscoveredAgentSurfaces,
+  directorySearchDiscoveredAgentSurfaces,
+  rankTrustedAgentSurfaces,
+  filterPreferredAgentSurfaces,
+  searchTrustedAgentSurfaces,
+  directorySearchTrustedAgentSurfaces,
+  searchPreferredAgentSurfaces,
+  directorySearchPreferredAgentSurfaces,
+  selectPreferredAgentSurface,
+  resolvePreferredAgentSurface,
+  resolveDirectoryPreferredAgentSurface,
+  diagnosePreferredAgentSurfaces,
+  searchPreferredAgentSurfaceDiagnostics,
+  directorySearchPreferredAgentSurfaceDiagnostics,
+} from './surfaces/agentRuntime.js'
 
 // -- Versioned Schema / Reference Exports --
 export {

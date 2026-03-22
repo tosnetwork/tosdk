@@ -5,6 +5,7 @@ import type {
   AgentCardResponse,
   AgentDirectorySearchParams,
   AgentDiscoveryInfo,
+  AgentPublishedCard,
   AgentPublishParams,
   AgentSearchParams,
   AgentSearchResult,
@@ -76,6 +77,18 @@ import type {
   SettlementCallback,
   SettlementEffect,
 } from './settlement.js'
+import type {
+  AgentIdentityInfo,
+  CapabilityInfo,
+  DelegationInfo,
+  DeployedCodeInfo,
+  NamespaceGovernanceInfo,
+  PackageInfo,
+  PublisherInfo,
+  SettlementPolicyInfo,
+  VerificationClaimInfo,
+  VerifierInfo,
+} from './protocol.js'
 
 export type BlockTag =
   | 'latest'
@@ -181,6 +194,49 @@ export type RpcBlock = {
   transactions: readonly unknown[]
   [key: string]: unknown
 }
+
+export type RpcHeader = Omit<RpcBlock, 'transactions'> & {
+  transactions?: readonly unknown[] | undefined
+}
+
+export type CodeObject = {
+  codeHash: Hex
+  code: Hex
+  createdAt: bigint
+  expireAt: bigint
+  expired: boolean
+}
+
+export type CodeObjectMeta = {
+  codeHash: Hex
+  createdAt: bigint
+  expireAt: bigint
+  expired: boolean
+}
+
+export type OverrideAccount = {
+  nonce?: number | bigint | undefined
+  code?: Hex | undefined
+  balance?: number | bigint | undefined
+  state?: Record<Hex, Hex> | undefined
+  stateDiff?: Record<Hex, Hex> | undefined
+}
+
+export type NodeInfo = {
+  id?: string | undefined
+  name?: string | undefined
+  enode?: string | undefined
+  enr?: string | undefined
+  ip?: string | undefined
+  listenAddr?: string | undefined
+  ports?: Record<string, unknown> | undefined
+  protocols?: Record<string, unknown> | undefined
+  [key: string]: unknown
+}
+
+export type GCStats = Record<string, unknown>
+
+export type MemStats = Record<string, unknown>
 
 export type HttpTransportConfig = {
   type: 'http'
@@ -423,10 +479,16 @@ export type PublicClient = {
     hash: Hex
     includeTransactions?: boolean | undefined
   }): Promise<RpcBlock | null>
+  getHeaderByHash(parameters: {
+    hash: Hex
+  }): Promise<RpcHeader | null>
   getBlockByNumber(parameters?: {
     blockNumber?: BlockTag | number | bigint | undefined
     includeTransactions?: boolean | undefined
   }): Promise<RpcBlock | null>
+  getHeaderByNumber(parameters?: {
+    blockNumber?: BlockTag | number | bigint | undefined
+  }): Promise<RpcHeader | null>
   getCode(parameters: {
     address: Address
     blockTag?: BlockTag | undefined
@@ -440,6 +502,18 @@ export type PublicClient = {
   call(parameters: {
     request: RpcTransactionRequest
     blockTag?: BlockTag | undefined
+  }): Promise<Hex>
+  callAtHash(parameters: {
+    request: RpcTransactionRequest
+    blockHash: Hex
+  }): Promise<Hex>
+  pendingCall(parameters: {
+    request: RpcTransactionRequest
+  }): Promise<Hex>
+  callWithOverrides(parameters: {
+    request: RpcTransactionRequest
+    blockTag?: BlockTag | number | bigint | undefined
+    overrides?: Record<Address, OverrideAccount> | undefined
   }): Promise<Hex>
   callPackage(parameters: CallPackageParameters): Promise<Hex>
   buildLeaseDeployTx(
@@ -490,6 +564,7 @@ export type PublicClient = {
     index: number | bigint
   }): Promise<RpcTransaction | null>
   pendingTransactions(): Promise<readonly RpcTransaction[]>
+  getPendingTransactionCount(): Promise<bigint>
   getProof(parameters: {
     address: Address
     storageKeys: readonly Hex[]
@@ -500,6 +575,7 @@ export type PublicClient = {
     blockTag?: BlockTag | undefined
   }): Promise<AccessListResult>
   netVersion(): Promise<string>
+  getNetworkId(): Promise<bigint>
   netPeerCount(): Promise<bigint>
   netListening(): Promise<boolean>
   clientVersion(): Promise<string>
@@ -513,6 +589,10 @@ export type PublicClient = {
   agentDiscoverySearch(parameters: AgentSearchParams): Promise<readonly AgentSearchResult[]>
   agentDiscoveryGetCard(parameters: { nodeRecord: string }): Promise<AgentCardResponse>
   agentDiscoveryDirectorySearch(parameters: AgentDirectorySearchParams): Promise<readonly AgentSearchResult[]>
+  agentDiscoveryGetSuggestedCard(parameters: {
+    address: Address
+    blockTag?: BlockTag | number | bigint | undefined
+  }): Promise<AgentPublishedCard | null>
   // Filter system
   newBlockFilter(): Promise<FilterId>
   newPendingTransactionFilter(): Promise<FilterId>
@@ -527,6 +607,14 @@ export type PublicClient = {
   getFinalizedBlock(): Promise<FinalizedBlock | null>
   getRetentionPolicy(): Promise<RetentionPolicy>
   getPruneWatermark(): Promise<PruneWatermark>
+  getCodeObject(parameters: {
+    codeHash: Hex
+    blockTag?: BlockTag | number | bigint | undefined
+  }): Promise<CodeObject | null>
+  getCodeObjectMeta(parameters: {
+    codeHash: Hex
+    blockTag?: BlockTag | number | bigint | undefined
+  }): Promise<CodeObjectMeta | null>
   getAccount(parameters: {
     address: Address
     blockTag?: BlockTag | undefined
@@ -606,6 +694,54 @@ export type PublicClient = {
     settlementRef: Hex
   }): Promise<SettlementEffect>
 
+  // -- Tolang protocol metadata / registries --
+  getContractMetadata(parameters: {
+    address: Address
+    blockTag?: BlockTag | number | bigint | undefined
+  }): Promise<DeployedCodeInfo | null>
+  getCapability(parameters: {
+    name: string
+  }): Promise<CapabilityInfo | null>
+  getDelegation(parameters: {
+    principal: Address
+    delegate: Address
+    scopeRef: Hex
+  }): Promise<DelegationInfo | null>
+  getPackage(parameters: {
+    name: string
+    version: string
+  }): Promise<PackageInfo | null>
+  getPackageByHash(parameters: {
+    packageHash: Hex
+  }): Promise<PackageInfo | null>
+  getLatestPackage(parameters: {
+    name: string
+    channel: string
+  }): Promise<PackageInfo | null>
+  getPublisher(parameters: {
+    publisherId: Hex
+  }): Promise<PublisherInfo | null>
+  getPublisherByNamespace(parameters: {
+    namespace: string
+  }): Promise<PublisherInfo | null>
+  getNamespaceClaim(parameters: {
+    namespace: string
+  }): Promise<NamespaceGovernanceInfo | null>
+  getVerifier(parameters: {
+    name: string
+  }): Promise<VerifierInfo | null>
+  getVerification(parameters: {
+    subject: Address
+    proofType: string
+  }): Promise<VerificationClaimInfo | null>
+  getSettlementPolicy(parameters: {
+    owner: Address
+    asset: string
+  }): Promise<SettlementPolicyInfo | null>
+  getAgentIdentity(parameters: {
+    agent: Address
+  }): Promise<AgentIdentityInfo | null>
+
   // -- TNS (TOS Name Service) --
   tnsResolve(parameters: { name: string }): Promise<TNSResolveResult>
   tnsReverse(parameters: { address: Address }): Promise<TNSReverseResult>
@@ -619,6 +755,12 @@ export type PublicClient = {
   getGatewaySchemaVersion(): Promise<{ schema_version: string; namespace: string }>
   getAuditReceiptSchemaVersion(): Promise<{ schema_version: string; namespace: string }>
   getSettlementSchemaVersion(): Promise<{ schema_version: string; namespace: string }>
+  getGcStats(): Promise<GCStats>
+  getMemStats(): Promise<MemStats>
+  getNodeInfo(): Promise<NodeInfo>
+  setHead(parameters: {
+    blockNumber: BlockTag | number | bigint
+  }): Promise<void>
 }
 
 export type WalletClientConfig = PublicClientConfig & {
@@ -680,6 +822,13 @@ export type WalletClient = PublicClient & {
   sendSystemAction(parameters: SendSystemActionParameters): Promise<Hex>
   setSignerMetadata(parameters: SetSignerMetadataParameters): Promise<Hex>
   agentDiscoveryPublish(parameters: AgentPublishParams): Promise<AgentDiscoveryInfo>
+  agentDiscoveryPublishSuggested(parameters: {
+    address: Address
+    primaryIdentity: Address
+    connectionModes?: readonly string[] | undefined
+    cardSequence?: number | undefined
+    blockTag?: BlockTag | number | bigint | undefined
+  }): Promise<AgentDiscoveryInfo>
   agentDiscoveryClear(): Promise<AgentDiscoveryInfo>
   // Validator maintenance
   enterMaintenance(parameters: ValidatorMaintenanceParameters): Promise<Hex>

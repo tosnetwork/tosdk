@@ -7,6 +7,7 @@ import type {
   AgentCardResponse,
   AgentDirectorySearchParams,
   AgentDiscoveryInfo,
+  AgentPublishedCard,
   AgentSearchParams,
   AgentSearchResult,
 } from '../types/agent.js'
@@ -15,19 +16,26 @@ import type {
   AccountProof,
   AccountState,
   BlockTag,
+  CodeObject,
+  CodeObjectMeta,
   CallPackageParameters,
   ChainProfile,
+  GCStats,
   FeeHistory,
   FilterId,
   FinalizedBlock,
   LogFilter,
   MaliciousVoteEvidenceRecord,
+  MemStats,
   NewFilterParams,
+  NodeInfo,
+  OverrideAccount,
   PruneWatermark,
   PublicClient,
   PublicClientConfig,
   RetentionPolicy,
   RpcBlock,
+  RpcHeader,
   RpcTransactionRequest,
   RpcLog,
   RpcSubscription,
@@ -95,6 +103,18 @@ import type {
   SettlementCallback,
   SettlementEffect,
 } from '../types/settlement.js'
+import type {
+  AgentIdentityInfo,
+  CapabilityInfo,
+  DelegationInfo,
+  DeployedCodeInfo,
+  NamespaceGovernanceInfo,
+  PackageInfo,
+  PublisherInfo,
+  SettlementPolicyInfo,
+  VerificationClaimInfo,
+  VerifierInfo,
+} from '../types/protocol.js'
 import { type NumberToHexErrorType, numberToHex } from '../utils/encoding/toHex.js'
 import { createTransport, http } from '../transports/index.js'
 import { encodePackageCallData } from '../utils/contract/encodePackageCallData.js'
@@ -297,6 +317,9 @@ export function createPublicClient(
         includeTransactions,
       ])
     },
+    async getHeaderByHash({ hash }) {
+      return request<RpcHeader | null>('tos_getHeaderByHash', [hash])
+    },
     async getBlockByNumber({
       blockNumber = 'latest',
       includeTransactions = false,
@@ -304,6 +327,11 @@ export function createPublicClient(
       return request<RpcBlock | null>('tos_getBlockByNumber', [
         normalizeBlockTag(blockNumber),
         includeTransactions,
+      ])
+    },
+    async getHeaderByNumber({ blockNumber = 'latest' } = {}) {
+      return request<RpcHeader | null>('tos_getHeaderByNumber', [
+        normalizeBlockTag(blockNumber),
       ])
     },
     async getCode({ address, blockTag = 'latest' }) {
@@ -329,6 +357,32 @@ export function createPublicClient(
         serializeRpcTransactionRequest(callRequest),
         normalizeBlockTag(blockTag),
       ])
+    },
+    async callAtHash({ request: callRequest, blockHash }) {
+      return request<Hex>('tos_call', [
+        serializeRpcTransactionRequest(callRequest),
+        { blockHash, requireCanonical: false },
+      ])
+    },
+    async pendingCall({ request: callRequest }) {
+      return request<Hex>('tos_call', [
+        serializeRpcTransactionRequest(callRequest),
+        'pending',
+      ])
+    },
+    async callWithOverrides({
+      request: callRequest,
+      blockTag = 'latest',
+      overrides,
+    }) {
+      const params: unknown[] = [
+        serializeRpcTransactionRequest(callRequest),
+        normalizeBlockTag(blockTag),
+      ]
+      if (typeof overrides !== 'undefined') {
+        params.push(serializeOverrideMap(overrides))
+      }
+      return request<Hex>('tos_call', params)
     },
     async callPackage({
       address,
@@ -464,6 +518,11 @@ export function createPublicClient(
     async pendingTransactions() {
       return request<readonly RpcTransaction[]>('tos_pendingTransactions')
     },
+    async getPendingTransactionCount() {
+      return parseRpcQuantity(
+        await request<Hex>('tos_getBlockTransactionCountByNumber', ['pending']),
+      )
+    },
     async getProof({ address, storageKeys, blockTag = 'latest' }) {
       return request<AccountProof>('tos_getProof', [
         getAddress(address),
@@ -479,6 +538,9 @@ export function createPublicClient(
     },
     async netVersion() {
       return request<string>('net_version')
+    },
+    async getNetworkId() {
+      return BigInt(await request<string>('net_version'))
     },
     async netPeerCount() {
       return parseRpcQuantity(await request<Hex>('net_peerCount'))
@@ -544,6 +606,22 @@ export function createPublicClient(
         params,
       )
     },
+    async agentDiscoveryGetSuggestedCard({
+      address,
+      blockTag,
+    }: {
+      address: Address
+      blockTag?: BlockTag | number | bigint | undefined
+    }) {
+      return request<AgentPublishedCard | null>('tos_agentDiscoveryGetSuggestedCard', [
+        {
+          address: getAddress(address),
+          ...(typeof blockTag !== 'undefined'
+            ? { block: normalizeBlockTag(blockTag) }
+            : {}),
+        },
+      ])
+    },
     // -- Filter system --
     async newBlockFilter() {
       return request<FilterId>('tos_newBlockFilter')
@@ -580,6 +658,20 @@ export function createPublicClient(
     },
     async getPruneWatermark() {
       return request<PruneWatermark>('tos_getPruneWatermark')
+    },
+    async getCodeObject({ codeHash, blockTag = 'latest' }) {
+      const result = await request<RpcCodeObject | null>('tos_getCodeObject', [
+        codeHash,
+        normalizeBlockTag(blockTag),
+      ])
+      return parseCodeObject(result)
+    },
+    async getCodeObjectMeta({ codeHash, blockTag = 'latest' }) {
+      const result = await request<RpcCodeObjectMeta | null>(
+        'tos_getCodeObjectMeta',
+        [codeHash, normalizeBlockTag(blockTag)],
+      )
+      return parseCodeObjectMeta(result)
     },
     async getAccount({ address, blockTag = 'latest' }) {
       return request<AccountState>('tos_getAccount', [
@@ -712,6 +804,73 @@ export function createPublicClient(
       ])
     },
 
+    // -- Tolang protocol metadata / registries --
+    async getContractMetadata({ address, blockTag = 'latest' }) {
+      return request<DeployedCodeInfo | null>('tos_getContractMetadata', [
+        getAddress(address),
+        normalizeBlockTag(blockTag),
+      ])
+    },
+    async getCapability({ name }) {
+      return request<CapabilityInfo | null>('tos_tolGetCapability', [name])
+    },
+    async getDelegation({ principal, delegate, scopeRef }) {
+      return request<DelegationInfo | null>('tos_tolGetDelegation', [
+        getAddress(principal),
+        getAddress(delegate),
+        scopeRef,
+      ])
+    },
+    async getPackage({ name, version }) {
+      return request<PackageInfo | null>('tos_tolGetPackage', [name, version])
+    },
+    async getPackageByHash({ packageHash }) {
+      return request<PackageInfo | null>('tos_tolGetPackageByHash', [
+        packageHash,
+      ])
+    },
+    async getLatestPackage({ name, channel }) {
+      return request<PackageInfo | null>('tos_tolGetLatestPackage', [
+        name,
+        channel,
+      ])
+    },
+    async getPublisher({ publisherId }) {
+      return request<PublisherInfo | null>('tos_tolGetPublisher', [
+        publisherId,
+      ])
+    },
+    async getPublisherByNamespace({ namespace }) {
+      return request<PublisherInfo | null>('tos_tolGetPublisherByNamespace', [
+        namespace,
+      ])
+    },
+    async getNamespaceClaim({ namespace }) {
+      return request<NamespaceGovernanceInfo | null>('tos_tolGetNamespaceClaim', [
+        namespace,
+      ])
+    },
+    async getVerifier({ name }) {
+      return request<VerifierInfo | null>('tos_tolGetVerifier', [name])
+    },
+    async getVerification({ subject, proofType }) {
+      return request<VerificationClaimInfo | null>('tos_tolGetVerification', [
+        getAddress(subject),
+        proofType,
+      ])
+    },
+    async getSettlementPolicy({ owner, asset }) {
+      return request<SettlementPolicyInfo | null>('tos_tolGetSettlementPolicy', [
+        getAddress(owner),
+        asset,
+      ])
+    },
+    async getAgentIdentity({ agent }) {
+      return request<AgentIdentityInfo | null>('tos_tolGetAgentIdentity', [
+        getAddress(agent),
+      ])
+    },
+
     // -- TNS (TOS Name Service) --
     async tnsResolve({ name }) {
       return request<TNSResolveResult>('tns_resolve', [name])
@@ -746,6 +905,18 @@ export function createPublicClient(
     },
     async getSettlementSchemaVersion() {
       return request<{ schema_version: string; namespace: string }>('settlement_getSchemaVersion')
+    },
+    async getGcStats() {
+      return request<GCStats>('debug_gcStats')
+    },
+    async getMemStats() {
+      return request<MemStats>('debug_memStats')
+    },
+    async getNodeInfo() {
+      return request<NodeInfo>('admin_nodeInfo')
+    },
+    async setHead({ blockNumber }) {
+      await request<null>('debug_setHead', [normalizeBlockTag(blockNumber)])
     },
   }
 }
@@ -783,6 +954,21 @@ type RpcLeaseRecord = {
   blockNumber: Hex
 }
 
+type RpcCodeObject = {
+  codeHash: Hex
+  code: Hex
+  createdAt: Hex
+  expireAt: Hex
+  expired: boolean
+}
+
+type RpcCodeObjectMeta = {
+  codeHash: Hex
+  createdAt: Hex
+  expireAt: Hex
+  expired: boolean
+}
+
 type RpcPrivBalanceResult = {
   pubkey: Hex
   commitment: Hex
@@ -813,6 +999,26 @@ function serializeRpcTransactionRequest(
     ...(request.from ? { from: getAddress(request.from) } : {}),
     to: getAddress(request.to),
   }
+}
+
+function serializeOverrideMap(
+  overrides: Record<Address, OverrideAccount>,
+) {
+  const out: Record<string, Record<string, unknown>> = {}
+  for (const [address, override] of Object.entries(overrides)) {
+    out[getAddress(address as Address)] = {
+      ...(typeof override.nonce !== 'undefined'
+        ? { nonce: numberToHex(override.nonce) }
+        : {}),
+      ...(typeof override.code !== 'undefined' ? { code: override.code } : {}),
+      ...(typeof override.balance !== 'undefined'
+        ? { balance: numberToHex(override.balance) }
+        : {}),
+      ...(override.state ? { state: override.state } : {}),
+      ...(override.stateDiff ? { stateDiff: override.stateDiff } : {}),
+    }
+  }
+  return out
 }
 
 function serializeLeaseDeployParameters(parameters: LeaseDeployParameters) {
@@ -980,6 +1186,29 @@ function parseLeaseRecord(record: RpcLeaseRecord | null): LeaseRecord | null {
     tombstoneCodeHash: record.tombstoneCodeHash,
     tombstoneExpiredAt: parseRpcQuantity(record.tombstoneExpiredAt),
     blockNumber: parseRpcQuantity(record.blockNumber),
+  }
+}
+
+function parseCodeObject(record: RpcCodeObject | null): CodeObject | null {
+  if (!record) return null
+  return {
+    codeHash: record.codeHash,
+    code: record.code,
+    createdAt: parseRpcQuantity(record.createdAt),
+    expireAt: parseRpcQuantity(record.expireAt),
+    expired: record.expired,
+  }
+}
+
+function parseCodeObjectMeta(
+  record: RpcCodeObjectMeta | null,
+): CodeObjectMeta | null {
+  if (!record) return null
+  return {
+    codeHash: record.codeHash,
+    createdAt: parseRpcQuantity(record.createdAt),
+    expireAt: parseRpcQuantity(record.expireAt),
+    expired: record.expired,
   }
 }
 

@@ -2019,6 +2019,511 @@ test('wallet client agentDiscoveryPublish omits optional fields when not provide
   expect(publishParams).not.toHaveProperty('cardSequence')
 })
 
+test('public client exposes contract metadata, protocol registries, and suggested-card wrappers', async () => {
+  const publisherId = hexBytes('11', 32)
+  const packageHash = hexBytes('22', 32)
+  const scopeRef = hexBytes('33', 32)
+  const capability = {
+    owner: nativeAccounts[0]!.address,
+    name: 'settlement.execute',
+    bit_index: 9,
+    category: 2,
+    version: 1,
+    status: 'active',
+    manifest_ref: 'ipfs://cap-manifest',
+  }
+  const delegation = {
+    principal: nativeAccounts[0]!.address,
+    delegate: nativeAccounts[1]!.address,
+    scope_ref: scopeRef,
+    capability_ref: 'cap:settlement.execute',
+    policy_ref: 'policy:settlement',
+    not_before_ms: 100,
+    expiry_ms: 200,
+    status: 'active',
+  }
+  const publisher = {
+    publisher_id: publisherId,
+    controller: nativeAccounts[0]!.address,
+    metadata_ref: 'ipfs://publisher-meta',
+    namespace: 'tolang.openlib',
+    status: 'active',
+    effective_status: 'active',
+  }
+  const pkg = {
+    name: 'tolang.openlib.settlement',
+    namespace: 'tolang.openlib',
+    version: '1.0.0',
+    package_hash: packageHash,
+    publisher_id: publisherId,
+    channel: 'stable',
+    status: 'active',
+    effective_status: 'active',
+    trusted: true,
+    contract_count: 2,
+    published_at: 1234,
+  }
+  const verifier = {
+    name: 'uno.disclosure',
+    verifier_type: 1,
+    verifier_class: 'disclosure_exact',
+    controller: nativeAccounts[0]!.address,
+    verifier_addr: nativeAccounts[2]!.address,
+    version: 1,
+    status: 'active',
+  }
+  const verification = {
+    subject: nativeAccounts[1]!.address,
+    proof_type: 'uno.disclosure',
+    proof_class: 'exact_disclosure',
+    verifier_class: 'disclosure_exact',
+    verified_at: 999,
+    expiry_ms: 1999,
+    status: 'active',
+  }
+  const settlementPolicy = {
+    policy_id: 'policy-1',
+    kind: 2,
+    policy_class: 'sponsored_allowance',
+    owner: nativeAccounts[0]!.address,
+    asset: 'tos',
+    max_amount: '1000000',
+    status: 'active',
+  }
+  const agentIdentity = {
+    agent_address: nativeAccounts[2]!.address,
+    registered: true,
+    suspended: false,
+    status: 1,
+    stake: '5000',
+    binding_active: true,
+    binding_verified: true,
+    binding_expiry: 99999,
+  }
+  const metadata = {
+    address: nativeAccounts[2]!.address,
+    code_hash: hexBytes('44', 32),
+    code_kind: 'toc',
+    artifact: {
+      contract_name: 'TaskSettlement',
+      bytecode_hash: hexBytes('55', 32),
+      abi: [],
+      profile: {
+        schema_version: '0.2.0',
+        identity: {
+          package_name: 'tolang.openlib.settlement',
+          package_version: '1.0.0',
+        },
+        contract: {
+          name: 'TaskSettlement',
+        },
+      },
+      routing_profile: {
+        service_kind: 'settlement',
+        capability_kind: 'managed_execution',
+      },
+      suggested_card: {
+        agent_id: 'task-settlement',
+        agent_address: nativeAccounts[2]!.address,
+      },
+    },
+  }
+  const suggestedCard = {
+    agent_id: 'task-settlement',
+    agent_address: nativeAccounts[2]!.address,
+    package_name: 'tolang.openlib.settlement',
+  }
+  const namespaceClaim = {
+    namespace: 'tolang.openlib',
+    publisher_id: publisherId,
+    status: 'active',
+  }
+
+  const { calls, fetchFn } = createJsonRpcFetch((request) => {
+    switch (request.method) {
+      case 'tos_getContractMetadata':
+        return metadata
+      case 'tos_tolGetCapability':
+        return capability
+      case 'tos_tolGetDelegation':
+        return delegation
+      case 'tos_tolGetPackage':
+      case 'tos_tolGetPackageByHash':
+      case 'tos_tolGetLatestPackage':
+        return pkg
+      case 'tos_tolGetPublisher':
+      case 'tos_tolGetPublisherByNamespace':
+        return publisher
+      case 'tos_tolGetNamespaceClaim':
+        return namespaceClaim
+      case 'tos_tolGetVerifier':
+        return verifier
+      case 'tos_tolGetVerification':
+        return verification
+      case 'tos_tolGetSettlementPolicy':
+        return settlementPolicy
+      case 'tos_tolGetAgentIdentity':
+        return agentIdentity
+      case 'tos_agentDiscoveryGetSuggestedCard':
+        return suggestedCard
+      default:
+        throw new Error(`Unexpected method: ${request.method}`)
+    }
+  })
+
+  const client = createPublicClient({
+    chain: tosTestnet,
+    transport: http(undefined, { fetchFn }),
+  })
+
+  await expect(
+    client.getContractMetadata({ address: nativeAccounts[2]!.address, blockTag: 8n }),
+  ).resolves.toEqual(metadata)
+  await expect(
+    client.getCapability({ name: 'settlement.execute' }),
+  ).resolves.toEqual(capability)
+  await expect(
+    client.getDelegation({
+      principal: nativeAccounts[0]!.address,
+      delegate: nativeAccounts[1]!.address,
+      scopeRef,
+    }),
+  ).resolves.toEqual(delegation)
+  await expect(
+    client.getPackage({ name: 'tolang.openlib.settlement', version: '1.0.0' }),
+  ).resolves.toEqual(pkg)
+  await expect(
+    client.getPackageByHash({ packageHash }),
+  ).resolves.toEqual(pkg)
+  await expect(
+    client.getLatestPackage({ name: 'tolang.openlib.settlement', channel: 'stable' }),
+  ).resolves.toEqual(pkg)
+  await expect(
+    client.getPublisher({ publisherId }),
+  ).resolves.toEqual(publisher)
+  await expect(
+    client.getPublisherByNamespace({ namespace: 'tolang.openlib' }),
+  ).resolves.toEqual(publisher)
+  await expect(
+    client.getNamespaceClaim({ namespace: 'tolang.openlib' }),
+  ).resolves.toEqual(namespaceClaim)
+  await expect(
+    client.getVerifier({ name: 'uno.disclosure' }),
+  ).resolves.toEqual(verifier)
+  await expect(
+    client.getVerification({
+      subject: nativeAccounts[1]!.address,
+      proofType: 'uno.disclosure',
+    }),
+  ).resolves.toEqual(verification)
+  await expect(
+    client.getSettlementPolicy({ owner: nativeAccounts[0]!.address, asset: 'tos' }),
+  ).resolves.toEqual(settlementPolicy)
+  await expect(
+    client.getAgentIdentity({ agent: nativeAccounts[2]!.address }),
+  ).resolves.toEqual(agentIdentity)
+  await expect(
+    client.agentDiscoveryGetSuggestedCard({
+      address: nativeAccounts[2]!.address,
+      blockTag: 9n,
+    }),
+  ).resolves.toEqual(suggestedCard)
+
+  expect(calls[0]!.request).toMatchObject({
+    method: 'tos_getContractMetadata',
+    params: [nativeAccounts[2]!.address, toHex(8n)],
+  })
+  expect(calls[1]!.request).toMatchObject({
+    method: 'tos_tolGetCapability',
+    params: ['settlement.execute'],
+  })
+  expect(calls[2]!.request).toMatchObject({
+    method: 'tos_tolGetDelegation',
+    params: [nativeAccounts[0]!.address, nativeAccounts[1]!.address, scopeRef],
+  })
+  expect(calls[3]!.request).toMatchObject({
+    method: 'tos_tolGetPackage',
+    params: ['tolang.openlib.settlement', '1.0.0'],
+  })
+  expect(calls[4]!.request).toMatchObject({
+    method: 'tos_tolGetPackageByHash',
+    params: [packageHash],
+  })
+  expect(calls[5]!.request).toMatchObject({
+    method: 'tos_tolGetLatestPackage',
+    params: ['tolang.openlib.settlement', 'stable'],
+  })
+  expect(calls[6]!.request).toMatchObject({
+    method: 'tos_tolGetPublisher',
+    params: [publisherId],
+  })
+  expect(calls[7]!.request).toMatchObject({
+    method: 'tos_tolGetPublisherByNamespace',
+    params: ['tolang.openlib'],
+  })
+  expect(calls[8]!.request).toMatchObject({
+    method: 'tos_tolGetNamespaceClaim',
+    params: ['tolang.openlib'],
+  })
+  expect(calls[9]!.request).toMatchObject({
+    method: 'tos_tolGetVerifier',
+    params: ['uno.disclosure'],
+  })
+  expect(calls[10]!.request).toMatchObject({
+    method: 'tos_tolGetVerification',
+    params: [nativeAccounts[1]!.address, 'uno.disclosure'],
+  })
+  expect(calls[11]!.request).toMatchObject({
+    method: 'tos_tolGetSettlementPolicy',
+    params: [nativeAccounts[0]!.address, 'tos'],
+  })
+  expect(calls[12]!.request).toMatchObject({
+    method: 'tos_tolGetAgentIdentity',
+    params: [nativeAccounts[2]!.address],
+  })
+  expect(calls[13]!.request).toMatchObject({
+    method: 'tos_agentDiscoveryGetSuggestedCard',
+    params: [{ address: nativeAccounts[2]!.address, block: toHex(9n) }],
+  })
+})
+
+test('wallet client exposes agentDiscoveryPublishSuggested', async () => {
+  const account = privateKeyToAccount(accounts[0]!.privateKey)
+  const publishedInfo = {
+    enabled: true,
+    profileVersion: 7,
+    talkProtocol: 'a2a/1.0',
+    primaryIdentity: account.address,
+    hasPublishedCard: true,
+  }
+
+  const { calls, fetchFn } = createJsonRpcFetch((request) => {
+    switch (request.method) {
+      case 'tos_agentDiscoveryPublishSuggested':
+        return publishedInfo
+      default:
+        throw new Error(`Unexpected method: ${request.method}`)
+    }
+  })
+
+  const client = createWalletClient({
+    account,
+    chain: tosTestnet,
+    transport: http(undefined, { fetchFn }),
+  })
+
+  await expect(
+    client.agentDiscoveryPublishSuggested({
+      address: nativeAccounts[1]!.address,
+      primaryIdentity: account.address,
+      connectionModes: ['https', 'stream'],
+      cardSequence: 3,
+      blockTag: 11n,
+    }),
+  ).resolves.toEqual(publishedInfo)
+
+  expect(calls[0]!.request).toMatchObject({
+    method: 'tos_agentDiscoveryPublishSuggested',
+    params: [
+      {
+        address: nativeAccounts[1]!.address,
+        primaryIdentity: account.address,
+        connectionModes: ['https', 'stream'],
+        cardSequence: 3,
+        block: toHex(11n),
+      },
+    ],
+  })
+})
+
+test('public client exposes low-level parity wrappers for headers, code objects, debug, and advanced calls', async () => {
+  const codeObject = {
+    codeHash: hexBytes('66', 32),
+    code: '0x60016001',
+    createdAt: toHex(101n),
+    expireAt: toHex(202n),
+    expired: false,
+  }
+  const codeObjectMeta = {
+    codeHash: hexBytes('66', 32),
+    createdAt: toHex(101n),
+    expireAt: toHex(202n),
+    expired: false,
+  }
+  const header = {
+    hash: hexBytes('77', 32),
+    number: toHex(9n),
+    parentHash: hexBytes('78', 32),
+  }
+  const nodeInfo = {
+    id: 'node-1',
+    name: 'gtos/test',
+    enode: 'enode://abc@127.0.0.1:30303',
+  }
+  const memStats = {
+    Alloc: 1234,
+    TotalAlloc: 5678,
+  }
+  const gcStats = {
+    NumGC: 9,
+  }
+
+  const { calls, fetchFn } = createJsonRpcFetch((request) => {
+    switch (request.method) {
+      case 'tos_getCodeObject':
+        return codeObject
+      case 'tos_getCodeObjectMeta':
+        return codeObjectMeta
+      case 'tos_getHeaderByHash':
+      case 'tos_getHeaderByNumber':
+        return header
+      case 'net_version':
+        return '1666'
+      case 'tos_getBlockTransactionCountByNumber':
+        return toHex(17n)
+      case 'tos_call':
+        return '0xdeadbeef'
+      case 'debug_gcStats':
+        return gcStats
+      case 'debug_memStats':
+        return memStats
+      case 'admin_nodeInfo':
+        return nodeInfo
+      case 'debug_setHead':
+        return null
+      default:
+        throw new Error(`Unexpected method: ${request.method}`)
+    }
+  })
+
+  const client = createPublicClient({
+    chain: tosTestnet,
+    transport: http(undefined, { fetchFn }),
+  })
+
+  await expect(
+    client.getCodeObject({ codeHash: hexBytes('66', 32), blockTag: 7n }),
+  ).resolves.toEqual({
+    codeHash: hexBytes('66', 32),
+    code: '0x60016001',
+    createdAt: 101n,
+    expireAt: 202n,
+    expired: false,
+  })
+  await expect(
+    client.getCodeObjectMeta({ codeHash: hexBytes('66', 32), blockTag: 8n }),
+  ).resolves.toEqual({
+    codeHash: hexBytes('66', 32),
+    createdAt: 101n,
+    expireAt: 202n,
+    expired: false,
+  })
+  await expect(
+    client.getHeaderByHash({ hash: hexBytes('77', 32) }),
+  ).resolves.toEqual(header)
+  await expect(
+    client.getHeaderByNumber({ blockNumber: 9n }),
+  ).resolves.toEqual(header)
+  await expect(client.getNetworkId()).resolves.toBe(1666n)
+  await expect(client.getPendingTransactionCount()).resolves.toBe(17n)
+  await expect(
+    client.callAtHash({
+      request: {
+        to: nativeAccounts[1]!.address,
+        data: '0x1234',
+      },
+      blockHash: hexBytes('88', 32),
+    }),
+  ).resolves.toBe('0xdeadbeef')
+  await expect(
+    client.pendingCall({
+      request: {
+        to: nativeAccounts[1]!.address,
+        data: '0x5678',
+      },
+    }),
+  ).resolves.toBe('0xdeadbeef')
+  await expect(
+    client.callWithOverrides({
+      request: {
+        to: nativeAccounts[1]!.address,
+      },
+      blockTag: 12n,
+      overrides: {
+        [nativeAccounts[1]!.address]: {
+          nonce: 3n,
+          code: '0x6000',
+          balance: 99n,
+          state: {
+            [hexBytes('99', 32)]: hexBytes('aa', 32),
+          },
+        },
+      },
+    }),
+  ).resolves.toBe('0xdeadbeef')
+  await expect(client.getGcStats()).resolves.toEqual(gcStats)
+  await expect(client.getMemStats()).resolves.toEqual(memStats)
+  await expect(client.getNodeInfo()).resolves.toEqual(nodeInfo)
+  await expect(client.setHead({ blockNumber: 15n })).resolves.toBeUndefined()
+
+  expect(calls[0]!.request).toMatchObject({
+    method: 'tos_getCodeObject',
+    params: [hexBytes('66', 32), toHex(7n)],
+  })
+  expect(calls[1]!.request).toMatchObject({
+    method: 'tos_getCodeObjectMeta',
+    params: [hexBytes('66', 32), toHex(8n)],
+  })
+  expect(calls[2]!.request).toMatchObject({
+    method: 'tos_getHeaderByHash',
+    params: [hexBytes('77', 32)],
+  })
+  expect(calls[3]!.request).toMatchObject({
+    method: 'tos_getHeaderByNumber',
+    params: [toHex(9n)],
+  })
+  expect(calls[4]!.request).toMatchObject({
+    method: 'net_version',
+    params: [],
+  })
+  expect(calls[5]!.request).toMatchObject({
+    method: 'tos_getBlockTransactionCountByNumber',
+    params: ['pending'],
+  })
+  expect(calls[6]!.request).toMatchObject({
+    method: 'tos_call',
+    params: [
+      { to: nativeAccounts[1]!.address, data: '0x1234' },
+      { blockHash: hexBytes('88', 32), requireCanonical: false },
+    ],
+  })
+  expect(calls[7]!.request).toMatchObject({
+    method: 'tos_call',
+    params: [{ to: nativeAccounts[1]!.address, data: '0x5678' }, 'pending'],
+  })
+  expect(calls[8]!.request).toMatchObject({
+    method: 'tos_call',
+  })
+  expect(calls[8]!.request.params[1]).toBe(toHex(12n))
+  expect(calls[8]!.request.params[2]).toMatchObject({
+    [nativeAccounts[1]!.address]: {
+      nonce: toHex(3n),
+      code: '0x6000',
+      balance: toHex(99n),
+      state: {
+        [hexBytes('99', 32)]: hexBytes('aa', 32),
+      },
+    },
+  })
+  expect(calls[9]!.request).toMatchObject({ method: 'debug_gcStats', params: [] })
+  expect(calls[10]!.request).toMatchObject({ method: 'debug_memStats', params: [] })
+  expect(calls[11]!.request).toMatchObject({ method: 'admin_nodeInfo', params: [] })
+  expect(calls[12]!.request).toMatchObject({
+    method: 'debug_setHead',
+    params: [toHex(15n)],
+  })
+})
+
 test('public client exposes DPoS methods: getSnapshot, getValidators, getValidator, getEpochInfo', async () => {
   const snapshotResponse = {
     number: toHex(100n),

@@ -36,8 +36,26 @@ import {
   requirePreferredAgentProvider,
   resolvePreferredAgentProvider,
   diagnoseAgentProviders,
+  balanceAt,
+  codeAt,
   inspectRuntimeReceipt,
   inspectSettlementEffect,
+  pendingBalanceAt,
+  pendingCallContract,
+  subscribeNewHead,
+  suggestGasTipCap,
+  syncProgress,
+  transactionSender,
+  getAgentRuntimeSurface,
+  getDiscoveredAgentSurface,
+  getRuntimeReceiptSurface,
+  getSettlementEffectSurface,
+  searchDiscoveredAgentSurfaces,
+  searchTrustedAgentSurfaces,
+  searchPreferredAgentSurfaces,
+  resolvePreferredAgentSurface,
+  diagnosePreferredAgentSurfaces,
+  searchPreferredAgentSurfaceDiagnostics,
 } from '../src/index.js'
 import type {
   Address,
@@ -56,6 +74,8 @@ const addr1 =
   '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address
 const addr2 =
   '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as Address
+const addr3 =
+  '0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' as Address
 
 describe('delegated execution surface', () => {
   test('buildRequesterEnvelope creates correct structure', () => {
@@ -377,6 +397,132 @@ describe('runtime settlement surface', () => {
     })
     expect(surface.effect?.settlementRef).toBe('0xbbb1')
     expect(surface.receipt?.receiptRef).toBe('0xaaa1')
+  })
+})
+
+describe('go client parity surface', () => {
+  test('syncProgress returns null for false and passes syncing objects through', async () => {
+    const idleClient = {
+      async syncing() {
+        return false as const
+      },
+    } as unknown as PublicClient
+    const busyClient = {
+      async syncing() {
+        return {
+          startingBlock: 1n,
+          currentBlock: 2n,
+          highestBlock: 3n,
+        }
+      },
+    } as unknown as PublicClient
+
+    await expect(syncProgress(idleClient)).resolves.toBeNull()
+    await expect(syncProgress(busyClient)).resolves.toEqual({
+      startingBlock: 1n,
+      currentBlock: 2n,
+      highestBlock: 3n,
+    })
+  })
+
+  test('transactionSender returns the sender and rejects wrong inclusion expectations', async () => {
+    const client = {
+      async getTransactionByBlockHashAndIndex() {
+        return {
+          hash: '0xaaaa',
+          from: addr1,
+          to: addr2,
+          value: '0x0',
+        }
+      },
+    } as unknown as PublicClient
+
+    await expect(
+      transactionSender(client, {
+        blockHash:
+          '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        index: 0,
+      }),
+    ).resolves.toBe(addr1)
+
+    await expect(
+      transactionSender(client, {
+        blockHash:
+          '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        index: 0,
+        expectedHash:
+          '0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      }),
+    ).rejects.toThrow(/wrong inclusion block\/index/)
+  })
+
+  test('balance/code/pending-call helpers delegate to the matching public-client methods', async () => {
+    const calls: Array<{ method: string; args: unknown[] }> = []
+    const client = {
+      async getBalance(args: unknown) {
+        calls.push({ method: 'getBalance', args: [args] })
+        return 42n
+      },
+      async getCode(args: unknown) {
+        calls.push({ method: 'getCode', args: [args] })
+        return '0x6001'
+      },
+      async pendingCall(args: unknown) {
+        calls.push({ method: 'pendingCall', args: [args] })
+        return '0xdeadbeef'
+      },
+    } as unknown as PublicClient
+
+    await expect(balanceAt(client, { account: addr1, blockTag: 'latest' })).resolves.toBe(42n)
+    await expect(pendingBalanceAt(client, { account: addr1 })).resolves.toBe(42n)
+    await expect(codeAt(client, { account: addr1 })).resolves.toBe('0x6001')
+    await expect(
+      pendingCallContract(client, {
+        request: {
+          to: addr2,
+          data: '0xabcdef',
+        },
+      }),
+    ).resolves.toBe('0xdeadbeef')
+
+    expect(calls).toEqual([
+      { method: 'getBalance', args: [{ address: addr1, blockTag: 'latest' }] },
+      { method: 'getBalance', args: [{ address: addr1, blockTag: 'pending' }] },
+      { method: 'getCode', args: [{ address: addr1 }] },
+      {
+        method: 'pendingCall',
+        args: [{ request: { to: addr2, data: '0xabcdef' } }],
+      },
+    ])
+  })
+
+  test('subscribeNewHead and suggestGasTipCap adapt common go-client helpers', async () => {
+    const delivered: unknown[] = []
+    const client = {
+      async maxPriorityFeePerGas() {
+        return 123n
+      },
+      async watchBlocks({
+        onBlock,
+      }: {
+        onBlock(block: unknown): void
+      }) {
+        onBlock({ number: '0x10', hash: '0x1234' })
+        return {
+          unsubscribe() {},
+        }
+      },
+    } as unknown as PublicClient
+
+    await expect(suggestGasTipCap(client)).resolves.toBe(123n)
+    const subscription = await subscribeNewHead(client, {
+      onHeader(header) {
+        delivered.push(header)
+      },
+    })
+
+    expect(subscription).toBeDefined()
+    expect(delivered).toEqual([{ number: '0x10', hash: '0x1234' }])
   })
 })
 
@@ -820,5 +966,301 @@ describe('agent discovery surface', () => {
       },
     )
     expect(selected?.provider.search.nodeId).toBe('node-package')
+  })
+})
+
+describe('agent runtime surface', () => {
+  function createAgentRuntimeClient(): PublicClient {
+    const cards = new Map([
+      ['enr:-artifact', {
+        nodeId: 'node-artifact',
+        nodeRecord: 'enr:-artifact',
+        cardJson: '{}',
+        parsedCard: {
+          agent_id: 'settlement-agent',
+          agent_address: addr1,
+          package_name: 'tolang.openlib.settlement',
+          routing_profile: {
+            service_kind: 'settlement',
+            service_kinds: ['settlement'],
+            capability_kind: 'managed_execution',
+            receipt_mode: 'required',
+          },
+        },
+      }],
+      ['enr:-package', {
+        nodeId: 'node-package',
+        nodeRecord: 'enr:-package',
+        cardJson: '{}',
+        parsedCard: {
+          agent_id: 'privacy-agent',
+          agent_address: addr2,
+          package_name: 'tolang.openlib.privacy',
+        },
+      }],
+      ['enr:-malformed', {
+        nodeId: 'node-malformed',
+        nodeRecord: 'enr:-malformed',
+        cardJson: '{}',
+        parsedCard: {
+          agent_id: 'bad-agent',
+          agent_address: 'not-an-address',
+        },
+      }],
+    ])
+    const metadata = new Map<string, Record<string, unknown>>([
+      [addr1, {
+        address: addr1,
+        code_kind: 'toc',
+        code_hash:
+          '0x1111111111111111111111111111111111111111111111111111111111111111',
+        artifact: {
+          contract_name: 'TaskSettlement',
+          bytecode_hash:
+            '0x1212121212121212121212121212121212121212121212121212121212121212',
+          abi: [],
+          profile: {
+            schema_version: '0.2.0',
+            identity: {
+              package_name: 'tolang.openlib.settlement',
+              package_version: '1.0.0',
+            },
+            contract: {
+              name: 'TaskSettlement',
+            },
+          },
+          routing_profile: {
+            service_kind: 'settlement',
+            service_kinds: ['settlement'],
+            capability_kind: 'managed_execution',
+            receipt_mode: 'required',
+          },
+          suggested_card: {
+            agent_id: 'task-settlement',
+            agent_address: addr1,
+          },
+        },
+      }],
+      [addr2, {
+        address: addr2,
+        code_kind: 'tor',
+        code_hash:
+          '0x2222222222222222222222222222222222222222222222222222222222222222',
+        package: {
+          name: 'privacy',
+          package: 'tolang.openlib.privacy',
+          version: '1.0.0',
+          main_contract: 'ConfidentialEscrow',
+          manifest: {},
+          contracts: [],
+          published: {
+            name: 'tolang.openlib.privacy',
+            version: '1.0.0',
+            package_hash:
+              '0x2323232323232323232323232323232323232323232323232323232323232323',
+            publisher_id:
+              '0x2424242424242424242424242424242424242424242424242424242424242424',
+            channel: 'stable',
+            status: 'active',
+            effective_status: 'active',
+            trusted: false,
+            contract_count: 1,
+            published_at: 10,
+          },
+        },
+      }],
+      [addr3, {
+        address: addr3,
+        code_kind: 'toc',
+        code_hash:
+          '0x3333333333333333333333333333333333333333333333333333333333333333',
+        artifact: {
+          contract_name: 'Treasury',
+          bytecode_hash:
+            '0x3434343434343434343434343434343434343434343434343434343434343434',
+          abi: [],
+        },
+      }],
+    ])
+    return {
+      agentDiscoverySearch: async ({ capability }: AgentSearchParams) => {
+        if (capability !== 'settlement.execute') return []
+        return [
+          {
+            nodeId: 'node-artifact',
+            nodeRecord: 'enr:-artifact',
+            connectionModes: 3,
+            trust: {
+              registered: true,
+              suspended: false,
+              stake: '10',
+              reputation: '20',
+              ratingCount: '2',
+              capabilityRegistered: true,
+              hasOnchainCapability: true,
+              localRankScore: 80,
+            },
+          },
+          {
+            nodeId: 'node-package',
+            nodeRecord: 'enr:-package',
+            connectionModes: 5,
+            trust: {
+              registered: true,
+              suspended: false,
+              stake: '5',
+              reputation: '10',
+              ratingCount: '1',
+              capabilityRegistered: true,
+              hasOnchainCapability: true,
+              localRankScore: 70,
+            },
+          },
+        ]
+      },
+      agentDiscoveryDirectorySearch: async ({ capability }: AgentDirectorySearchParams) => {
+        if (capability !== 'settlement.execute') return []
+        return [
+          {
+            nodeId: 'node-artifact',
+            nodeRecord: 'enr:-artifact',
+            connectionModes: 3,
+            trust: {
+              registered: true,
+              suspended: false,
+              stake: '10',
+              reputation: '20',
+              ratingCount: '2',
+              capabilityRegistered: true,
+              hasOnchainCapability: true,
+              localRankScore: 80,
+            },
+          },
+        ]
+      },
+      agentDiscoveryGetCard: async ({ nodeRecord }: { nodeRecord: string }) =>
+        cards.get(nodeRecord)!,
+      getContractMetadata: async ({ address }: { address: Address }) =>
+        (metadata.get(address) ?? null) as any,
+      getRuntimeReceipt: async () => ({
+        receiptRef:
+          '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
+        receiptKind: 7,
+        status: 'success',
+        mode: 1,
+        modeName: 'PUBLIC_TRANSFER',
+        sender: addr1,
+        recipient: addr3,
+        settlementRef:
+          '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1',
+        openedAt: 10,
+        finalizedAt: 11,
+      }),
+      getSettlementEffect: async () => ({
+        settlementRef:
+          '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1',
+        receiptRef:
+          '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
+        mode: 1,
+        modeName: 'PUBLIC_TRANSFER',
+        sender: addr1,
+        recipient: addr3,
+        createdAt: 12,
+      }),
+    } as unknown as PublicClient
+  }
+
+  test('getAgentRuntimeSurface normalizes deployed metadata', async () => {
+    const client = createAgentRuntimeClient()
+    const surface = await getAgentRuntimeSurface(client, { address: addr1 })
+    expect(surface?.codeKind).toBe('toc')
+    expect(surface?.contractName).toBe('TaskSettlement')
+    expect(surface?.packageName).toBe('tolang.openlib.settlement')
+    expect(surface?.routing?.service_kind).toBe('settlement')
+  })
+
+  test('discovery/runtime helpers join cards, metadata, and trust filtering', async () => {
+    const client = createAgentRuntimeClient()
+
+    const discovered = await getDiscoveredAgentSurface(client, {
+      nodeRecord: 'enr:-artifact',
+    })
+    expect(discovered.runtime?.packageName).toBe('tolang.openlib.settlement')
+
+    const malformed = await getDiscoveredAgentSurface(client, {
+      nodeRecord: 'enr:-malformed',
+    })
+    expect(malformed.runtime).toBeUndefined()
+
+    const joined = await searchDiscoveredAgentSurfaces(client, {
+      capability: 'settlement.execute',
+    })
+    expect(joined).toHaveLength(2)
+    expect(joined[0]?.surface?.runtime?.contractName).toBe('TaskSettlement')
+
+    const trusted = await searchTrustedAgentSurfaces(client, {
+      capability: 'settlement.execute',
+    })
+    expect(trusted).toHaveLength(1)
+    expect(trusted[0]?.result.nodeId).toBe('node-artifact')
+
+    const preferred = await searchPreferredAgentSurfaces(
+      client,
+      { capability: 'settlement.execute' },
+      {
+        requiredConnectionModes: ['https'],
+        serviceKind: 'settlement',
+        capabilityKind: 'managed_execution',
+        receiptMode: 'required',
+        minTrustScore: 75,
+      },
+    )
+    expect(preferred).toHaveLength(1)
+    expect(preferred[0]?.result.nodeId).toBe('node-artifact')
+
+    const resolved = await resolvePreferredAgentSurface(
+      client,
+      { capability: 'settlement.execute' },
+      { packagePrefix: 'tolang.openlib.settlement' },
+    )
+    expect(resolved?.result.nodeId).toBe('node-artifact')
+
+    const diagnostics = await searchPreferredAgentSurfaceDiagnostics(
+      client,
+      { capability: 'settlement.execute' },
+      { packagePrefix: 'tolang.openlib.settlement' },
+    )
+    expect(
+      diagnostics.find((item) => item.entry.result.nodeId === 'node-package')
+        ?.trustFailures,
+    ).toContain('package is untrusted')
+    expect(
+      diagnosePreferredAgentSurfaces(joined, {
+        packagePrefix: 'tolang.openlib.settlement',
+      }),
+    ).toHaveLength(2)
+  })
+
+  test('runtime settlement surface joins runtime metadata for sender and recipient', async () => {
+    const client = createAgentRuntimeClient()
+
+    const receiptSurface = await getRuntimeReceiptSurface(client, {
+      receiptRef:
+        '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
+    })
+    expect(receiptSurface.effect?.settlementRef).toBe(
+      '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1',
+    )
+    expect(receiptSurface.senderRuntime?.contractName).toBe('TaskSettlement')
+    expect(receiptSurface.recipientRuntime?.contractName).toBe('Treasury')
+
+    const effectSurface = await getSettlementEffectSurface(client, {
+      settlementRef:
+        '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1',
+    })
+    expect(effectSurface.receipt?.receiptRef).toBe(
+      '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
+    )
+    expect(effectSurface.recipientRuntime?.contractName).toBe('Treasury')
   })
 })

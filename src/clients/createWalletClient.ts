@@ -4,6 +4,7 @@ import type {
   AgentPublishParams,
 } from '../types/agent.js'
 import type {
+  BlockTag,
   DeployPackageParameters,
   SendPackageTransactionParameters,
   SetSignerMetadataParameters,
@@ -301,6 +302,33 @@ export function createWalletClient(config: WalletClientConfig): WalletClient {
   const agentDiscoveryClear = async (): Promise<AgentDiscoveryInfo> =>
     publicClient.request<AgentDiscoveryInfo>('tos_agentDiscoveryClear')
 
+  const agentDiscoveryPublishSuggested = async ({
+    address,
+    primaryIdentity,
+    connectionModes,
+    cardSequence,
+    blockTag,
+  }: {
+    address: Address
+    primaryIdentity: Address
+    connectionModes?: readonly string[] | undefined
+    cardSequence?: number | undefined
+    blockTag?: BlockTag | number | bigint | undefined
+  }): Promise<AgentDiscoveryInfo> =>
+    publicClient.request<AgentDiscoveryInfo>('tos_agentDiscoveryPublishSuggested', [
+      {
+        address: getAddress(address),
+        primaryIdentity: getAddress(primaryIdentity),
+        ...(typeof connectionModes !== 'undefined'
+          ? { connectionModes: [...connectionModes] }
+          : {}),
+        ...(typeof cardSequence !== 'undefined' ? { cardSequence } : {}),
+        ...(typeof blockTag !== 'undefined'
+          ? { block: typeof blockTag === 'number' || typeof blockTag === 'bigint' ? numberToHex(blockTag) : blockTag }
+          : {}),
+      },
+    ])
+
   const serializeMaintenanceArgs = (parameters: ValidatorMaintenanceParameters) => ({
     from: getAddress(parameters.from),
     ...(typeof parameters.nonce !== 'undefined'
@@ -408,6 +436,7 @@ export function createWalletClient(config: WalletClientConfig): WalletClient {
     sendSystemAction,
     setSignerMetadata,
     agentDiscoveryPublish,
+    agentDiscoveryPublishSuggested,
     agentDiscoveryClear,
     enterMaintenance,
     buildEnterMaintenanceTx,
