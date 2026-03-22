@@ -70,3 +70,9 @@ export {
   type ProofVerificationResult,
   type PublicProofArtifactKind,
 } from './proofMarket.js'
+
+export {
+  inspectRuntimeReceipt,
+  inspectSettlementEffect,
+  type RuntimeSettlementSurface,
+} from './runtimeSettlement.js'

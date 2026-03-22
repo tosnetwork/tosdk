@@ -36,6 +36,8 @@ import {
   requirePreferredAgentProvider,
   resolvePreferredAgentProvider,
   diagnoseAgentProviders,
+  inspectRuntimeReceipt,
+  inspectSettlementEffect,
 } from '../src/index.js'
 import type {
   Address,
@@ -301,6 +303,80 @@ describe('operator control surface', () => {
       baseUrl: 'https://signer.example.com',
     })
     expect(errors).toHaveLength(0)
+  })
+})
+
+describe('runtime settlement surface', () => {
+  test('inspectRuntimeReceipt joins the linked settlement effect', async () => {
+    const client = {
+      async getRuntimeReceipt() {
+        return {
+          receiptRef: '0xaaa1',
+          receiptKind: 7,
+          status: 'success',
+          mode: 1,
+          modeName: 'PUBLIC_TRANSFER',
+          sender: addr1,
+          recipient: addr2,
+          settlementRef: '0xbbb1',
+          openedAt: 10,
+          finalizedAt: 11,
+        }
+      },
+      async getSettlementEffect() {
+        return {
+          settlementRef: '0xbbb1',
+          receiptRef: '0xaaa1',
+          mode: 1,
+          modeName: 'PUBLIC_TRANSFER',
+          sender: addr1,
+          recipient: addr2,
+          createdAt: 10,
+        }
+      },
+    } as unknown as PublicClient
+
+    const surface = await inspectRuntimeReceipt(client, {
+      receiptRef: '0xaaa1',
+    })
+    expect(surface.receipt?.receiptRef).toBe('0xaaa1')
+    expect(surface.effect?.settlementRef).toBe('0xbbb1')
+  })
+
+  test('inspectSettlementEffect joins the linked runtime receipt', async () => {
+    const client = {
+      async getRuntimeReceipt() {
+        return {
+          receiptRef: '0xaaa1',
+          receiptKind: 7,
+          status: 'success',
+          mode: 1,
+          modeName: 'PUBLIC_TRANSFER',
+          sender: addr1,
+          recipient: addr2,
+          settlementRef: '0xbbb1',
+          openedAt: 10,
+          finalizedAt: 11,
+        }
+      },
+      async getSettlementEffect() {
+        return {
+          settlementRef: '0xbbb1',
+          receiptRef: '0xaaa1',
+          mode: 1,
+          modeName: 'PUBLIC_TRANSFER',
+          sender: addr1,
+          recipient: addr2,
+          createdAt: 10,
+        }
+      },
+    } as unknown as PublicClient
+
+    const surface = await inspectSettlementEffect(client, {
+      settlementRef: '0xbbb1',
+    })
+    expect(surface.effect?.settlementRef).toBe('0xbbb1')
+    expect(surface.receipt?.receiptRef).toBe('0xaaa1')
   })
 })
 

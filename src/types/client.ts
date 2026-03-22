@@ -70,7 +70,12 @@ import type {
   SpendCaps,
   TerminalPolicy,
 } from './policyWallet.js'
-import type { AsyncFulfillment, SettlementCallback } from './settlement.js'
+import type {
+  AsyncFulfillment,
+  RuntimeReceipt,
+  SettlementCallback,
+  SettlementEffect,
+} from './settlement.js'
 
 export type BlockTag =
   | 'latest'
@@ -594,6 +599,12 @@ export type PublicClient = {
   getAsyncFulfillment(parameters: {
     fulfillmentId: string
   }): Promise<AsyncFulfillment>
+  getRuntimeReceipt(parameters: {
+    receiptRef: Hex
+  }): Promise<RuntimeReceipt>
+  getSettlementEffect(parameters: {
+    settlementRef: Hex
+  }): Promise<SettlementEffect>
 
   // -- TNS (TOS Name Service) --
   tnsResolve(parameters: { name: string }): Promise<TNSResolveResult>

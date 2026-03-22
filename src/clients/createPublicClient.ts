@@ -89,7 +89,12 @@ import type {
   SpendCaps,
   TerminalPolicy,
 } from '../types/policyWallet.js'
-import type { AsyncFulfillment, SettlementCallback } from '../types/settlement.js'
+import type {
+  AsyncFulfillment,
+  RuntimeReceipt,
+  SettlementCallback,
+  SettlementEffect,
+} from '../types/settlement.js'
 import { type NumberToHexErrorType, numberToHex } from '../utils/encoding/toHex.js'
 import { createTransport, http } from '../transports/index.js'
 import { encodePackageCallData } from '../utils/contract/encodePackageCallData.js'
@@ -694,6 +699,16 @@ export function createPublicClient(
     async getAsyncFulfillment({ fulfillmentId }) {
       return request<AsyncFulfillment>('settlement_getFulfillment', [
         fulfillmentId,
+      ])
+    },
+    async getRuntimeReceipt({ receiptRef }) {
+      return request<RuntimeReceipt>('settlement_getRuntimeReceipt', [
+        receiptRef,
+      ])
+    },
+    async getSettlementEffect({ settlementRef }) {
+      return request<SettlementEffect>('settlement_getSettlementEffect', [
+        settlementRef,
       ])
     },
 

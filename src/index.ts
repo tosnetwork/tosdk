@@ -138,6 +138,8 @@ export type {
 } from './types/storage.js'
 export type {
   AsyncFulfillment,
+  RuntimeReceipt,
+  SettlementEffect,
   SettlementCallback,
   SettlementKind,
   SettlementReceipt,
@@ -407,6 +409,12 @@ export {
   type ProofVerificationResult,
   type PublicProofArtifactKind,
 } from './surfaces/proofMarket.js'
+
+export {
+  inspectRuntimeReceipt,
+  inspectSettlementEffect,
+  type RuntimeSettlementSurface,
+} from './surfaces/runtimeSettlement.js'
 
 // -- Versioned Schema / Reference Exports --
 export {

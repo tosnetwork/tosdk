@@ -44,3 +44,34 @@ export type AsyncFulfillment = {
   fulfilledAt: number
   receiptRef: Hex
 }
+
+export type RuntimeReceipt = {
+  receiptRef: Hex
+  receiptKind: number
+  status: string
+  mode: number
+  modeName?: string | undefined
+  sender: Address
+  recipient: Address
+  settlementRef?: Hex | undefined
+  proofRef?: Hex | undefined
+  failureRef?: Hex | undefined
+  policyRef?: Hex | undefined
+  artifactRef?: Hex | undefined
+  amountRef?: Hex | undefined
+  openedAt: number
+  finalizedAt: number
+}
+
+export type SettlementEffect = {
+  settlementRef: Hex
+  receiptRef?: Hex | undefined
+  mode: number
+  modeName?: string | undefined
+  sender: Address
+  recipient: Address
+  amountRef?: Hex | undefined
+  policyRef?: Hex | undefined
+  artifactRef?: Hex | undefined
+  createdAt: number
+}
