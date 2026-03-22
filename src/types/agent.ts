@@ -50,6 +50,16 @@ export type AgentPublishedThreatModel = {
   critical_invariants?: readonly string[] | undefined
 }
 
+export type AgentPublishedDeploymentTrust = {
+  package_name?: string | undefined
+  package_version?: string | undefined
+  publisher_id?: string | undefined
+  trusted?: boolean | undefined
+  status?: string | undefined
+  effective_status?: string | undefined
+  namespace_status?: string | undefined
+}
+
 export type AgentPublishedCard = {
   version?: number | undefined
   agent_id?: string | undefined
@@ -61,6 +71,7 @@ export type AgentPublishedCard = {
   capabilities?: readonly AgentPublishedCapability[] | undefined
   routing_profile?: AgentRoutingProfile | undefined
   threat_model?: AgentPublishedThreatModel | undefined
+  deployment_trust?: AgentPublishedDeploymentTrust | undefined
 }
 
 /** Info returned by `tos_agentDiscoveryInfo`. */

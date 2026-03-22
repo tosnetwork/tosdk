@@ -53,6 +53,7 @@ export type RuntimeReceipt = {
   modeName?: string | undefined
   sender: Address
   recipient: Address
+  sponsor?: Address | undefined
   settlementRef?: Hex | undefined
   proofRef?: Hex | undefined
   failureRef?: Hex | undefined
@@ -70,6 +71,7 @@ export type SettlementEffect = {
   modeName?: string | undefined
   sender: Address
   recipient: Address
+  sponsor?: Address | undefined
   amountRef?: Hex | undefined
   policyRef?: Hex | undefined
   artifactRef?: Hex | undefined
