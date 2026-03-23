@@ -1,7 +1,7 @@
 {
   "name": "@tosnetwork/tosdk",
   "description": "TypeScript SDK for TOS Network",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
