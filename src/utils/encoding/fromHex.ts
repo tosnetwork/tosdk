@@ -63,8 +63,8 @@ export type FromHexErrorType =
 /**
  * Decodes a hex string into a string, number, bigint, boolean, or byte array.
  *
- * - Docs: https://github.com/tos-network/tosdk
- * - Example: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
+ * - Example: https://gitlab.com/tos-network/tosdk
  *
  * @param hex Hex string to decode.
  * @param toOrOpts Type to convert to or options.
@@ -113,7 +113,7 @@ export type HexToBigIntErrorType = AssertSizeErrorType | ErrorType
 /**
  * Decodes a hex value into a bigint.
  *
- * - Docs: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
  *
  * @param hex Hex value to decode.
  * @param opts Options.
@@ -158,7 +158,7 @@ export type HexToBoolErrorType =
 /**
  * Decodes a hex value into a boolean.
  *
- * - Docs: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
  *
  * @param hex Hex value to decode.
  * @param opts Options.
@@ -195,7 +195,7 @@ export type HexToNumberErrorType =
 /**
  * Decodes a hex string into a number.
  *
- * - Docs: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
  *
  * @param hex Hex value to decode.
  * @param opts Options.
@@ -239,7 +239,7 @@ export type HexToStringErrorType =
 /**
  * Decodes a hex value into a UTF-8 string.
  *
- * - Docs: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
  *
  * @param hex Hex value to decode.
  * @param opts Options.

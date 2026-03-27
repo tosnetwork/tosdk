@@ -27,8 +27,8 @@ export type ToHexErrorType =
 /**
  * Encodes a string, number, bigint, or ByteArray into a hex string
  *
- * - Docs: https://github.com/tos-network/tosdk
- * - Example: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
+ * - Example: https://gitlab.com/tos-network/tosdk
  *
  * @param value Value to encode.
  * @param opts Options.
@@ -72,7 +72,7 @@ export type BoolToHexErrorType = AssertSizeErrorType | PadErrorType | ErrorType
 /**
  * Encodes a boolean into a hex string
  *
- * - Docs: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
  *
  * @param value Value to encode.
  * @param opts Options.
@@ -112,7 +112,7 @@ export type BytesToHexErrorType = AssertSizeErrorType | PadErrorType | ErrorType
 /**
  * Encodes a bytes array into a hex string
  *
- * - Docs: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
  *
  * @param value Value to encode.
  * @param opts Options.
@@ -163,7 +163,7 @@ export type NumberToHexErrorType =
 /**
  * Encodes a number or bigint into a hex string
  *
- * - Docs: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
  *
  * @param value Value to encode.
  * @param opts Options.
@@ -227,7 +227,7 @@ const encoder = /*#__PURE__*/ new TextEncoder()
 /**
  * Encodes a UTF-8 string into a hex string
  *
- * - Docs: https://github.com/tos-network/tosdk
+ * - Docs: https://gitlab.com/tos-network/tosdk
  *
  * @param value Value to encode.
  * @param opts Options.
