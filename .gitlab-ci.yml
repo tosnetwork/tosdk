@@ -1,0 +1,29 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+
+default:
+  image: node:22
+  interruptible: true
+  before_script:
+    - corepack enable
+    - pnpm config set store-dir .cache/pnpm-store
+    - pnpm --version
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+      prefix: node-22
+    paths:
+      - .cache/pnpm-store
+
+stages:
+  - lint
+
+lint:
+  stage: lint
+  script:
+    - pnpm install --frozen-lockfile --ignore-scripts
+    - pnpm run typecheck
