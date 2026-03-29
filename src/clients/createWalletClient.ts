@@ -68,6 +68,16 @@ export function createWalletClient(config: WalletClientConfig): WalletClient {
     sponsorNonce,
     sponsorExpiry,
     sponsorPolicyHash,
+    // Phase 0.3: encrypted transfer fields
+    commitment,
+    senderHandle,
+    receiverHandle,
+    sourceCommitment,
+    ctValidityProof,
+    commitmentEqProof,
+    rangeProof,
+    auditorHandle,
+    encryptedMemo,
   }: SignTransactionParameters): Promise<TransactionSerializableNative> => {
     const resolvedAccount = resolveAccount(account)
     const resolvedSignerType = signerType ?? resolvedAccount.signerType ?? 'secp256k1'
@@ -109,6 +119,16 @@ export function createWalletClient(config: WalletClientConfig): WalletClient {
         : {}),
       ...(typeof to !== 'undefined' && to !== null ? { to: getAddress(to) } : {}),
       value: BigInt(value),
+      // Phase 0.3: pass through encrypted transfer fields
+      ...(commitment ? { commitment } : {}),
+      ...(senderHandle ? { senderHandle } : {}),
+      ...(receiverHandle ? { receiverHandle } : {}),
+      ...(sourceCommitment ? { sourceCommitment } : {}),
+      ...(ctValidityProof ? { ctValidityProof } : {}),
+      ...(commitmentEqProof ? { commitmentEqProof } : {}),
+      ...(rangeProof ? { rangeProof } : {}),
+      ...(auditorHandle ? { auditorHandle } : {}),
+      ...(encryptedMemo ? { encryptedMemo } : {}),
     }
   }
 

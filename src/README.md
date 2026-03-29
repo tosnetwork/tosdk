@@ -17,7 +17,7 @@ This repository is a native TypeScript SDK for TOS Network. It focuses on native
 - HD and mnemonic account derivation
 - Native 32-byte address derivation from secp256k1 keys
 - Native transaction and typed-data signing
-- Public and wallet clients with privacy RPC helpers (`privGetBalance`, `privGetNonce`, `privTransfer`, `privShield`, `privUnshield`)
+- Public and wallet clients with privacy RPC helpers (`privGetBalance`, `privGetNonce`, selective disclosure)
 
 ## Scope
 

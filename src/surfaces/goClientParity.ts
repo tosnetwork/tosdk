@@ -147,7 +147,7 @@ export async function peerCount(client: PublicClient): Promise<bigint> {
 export async function balanceAt(
   client: PublicClient,
   parameters: { account: Address; blockTag?: BlockTag | undefined },
-): Promise<bigint> {
+): Promise<Hex> {
   return client.getBalance({
     address: parameters.account,
     ...(typeof parameters.blockTag !== 'undefined'
@@ -196,7 +196,7 @@ export async function nonceAt(
 export async function pendingBalanceAt(
   client: PublicClient,
   parameters: { account: Address },
-): Promise<bigint> {
+): Promise<Hex> {
   return client.getBalance({ address: parameters.account, blockTag: 'pending' })
 }
 

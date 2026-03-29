@@ -5,16 +5,19 @@ import {
   http,
   tosTestnet,
 } from '../src/index.js'
-import type {
-  Address,
-  PrivShieldParameters,
-  PrivTransferParameters,
-  PrivUnshieldParameters,
-} from '../src/index.js'
 
-function hexBlob(byte: string, size: number): `0x${string}` {
-  return `0x${byte.repeat(size)}` as `0x${string}`
-}
+/**
+ * Phase 0.3 privacy wallet example.
+ *
+ * Privacy tx types (PrivTransfer, Shield, Unshield) have been removed from the
+ * RPC layer.  Encrypted balances are now managed through standard SignerTx
+ * transactions with commitment fields.
+ *
+ * What still works:
+ *   - privGetBalance  — query encrypted commitment + handle from account state
+ *   - privGetNonce    — returns the unified nonce (backed by tos_getTransactionCount)
+ *   - Selective disclosure (prove / verify / decryption tokens)
+ */
 
 export function buildPrivacyWalletExample() {
   const privacyAccount = elgamalPrivateKeyToAccount(
@@ -32,82 +35,48 @@ export function buildPrivacyWalletExample() {
     transport: http('http://127.0.0.1:8545'),
   })
 
-  const sampleTransfer: PrivTransferParameters = {
-    from: privacyAccount.publicKey,
-    to: hexBlob('11', 32),
-    privNonce: 7n,
-    fee: 3n,
-    feeLimit: 5n,
-    commitment: hexBlob('22', 32),
-    senderHandle: hexBlob('33', 32),
-    receiverHandle: hexBlob('44', 32),
-    sourceCommitment: hexBlob('55', 32),
-    ctValidityProof: hexBlob('66', 160),
-    commitmentEqProof: hexBlob('77', 192),
-    rangeProof: hexBlob('88', 736),
-    encryptedMemo: hexBlob('99', 48),
-    memoSenderHandle: hexBlob('aa', 32),
-    memoReceiverHandle: hexBlob('bb', 32),
-    s: hexBlob('cc', 32),
-    e: hexBlob('dd', 32),
-  }
-
-  const sampleShield: PrivShieldParameters = {
-    pubkey: privacyAccount.publicKey,
-    recipient: hexBlob('12', 32),
-    privNonce: 8n,
-    fee: 2n,
-    amount: 50n,
-    commitment: hexBlob('23', 32),
-    handle: hexBlob('34', 32),
-    shieldProof: hexBlob('45', 96),
-    rangeProof: hexBlob('56', 672),
-    s: hexBlob('67', 32),
-    e: hexBlob('78', 32),
-  }
-
-  const sampleUnshield: PrivUnshieldParameters = {
-    pubkey: privacyAccount.publicKey,
-    recipient:
-      '0xc1ffd3cfee2d9e5cd67643f8f39fd6e51aad88f6f4ce6ab8827279cfffb92266' as Address,
-    privNonce: 9n,
-    fee: 4n,
-    amount: 75n,
-    sourceCommitment: hexBlob('89', 32),
-    commitmentEqProof: hexBlob('9a', 192),
-    rangeProof: hexBlob('ab', 672),
-    s: hexBlob('bc', 32),
-    e: hexBlob('cd', 32),
-  }
-
   return {
     privacyAccount,
     publicClient,
     walletClient,
+
+    /** Query the encrypted balance (commitment + handle) for this account. */
     readEncryptedBalance(blockTag: 'latest' | 'pending' | bigint = 'latest') {
       return publicClient.privGetBalance({
         pubkey: privacyAccount.publicKey,
         blockTag,
       })
     },
-    readPrivNonce(blockTag: 'latest' | 'pending' | bigint = 'pending') {
+
+    /** Query the unified nonce (Phase 0.3 — backed by tos_getTransactionCount). */
+    readNonce(blockTag: 'latest' | 'pending' | bigint = 'pending') {
       return publicClient.privGetNonce({
         pubkey: privacyAccount.publicKey,
         blockTag,
       })
     },
-    submitPreparedTransfer(parameters: PrivTransferParameters = sampleTransfer) {
-      return walletClient.privTransfer(parameters)
+
+    /**
+     * Send a standard transaction with commitment fields.
+     *
+     * In Phase 0.3, encrypted transfers are built as regular SignerTx
+     * transactions whose `data` payload carries the commitment, handle,
+     * and zero-knowledge proofs.  Use `walletClient.sendTransaction()`
+     * with the appropriate data encoding.
+     */
+    async sendEncryptedTransfer(params: {
+      to: `0x${string}`
+      value?: bigint
+      data: `0x${string}`
+      gas?: bigint
+    }) {
+      return walletClient.sendTransaction({
+        to: params.to,
+        value: params.value ?? 0n,
+        data: params.data,
+        gas: params.gas ?? 120_000n,
+      })
     },
-    submitPreparedShield(parameters: PrivShieldParameters = sampleShield) {
-      return walletClient.privShield(parameters)
-    },
-    submitPreparedUnshield(parameters: PrivUnshieldParameters = sampleUnshield) {
-      return walletClient.privUnshield(parameters)
-    },
-    sampleTransfer,
-    sampleShield,
-    sampleUnshield,
   }
 }
 
@@ -116,14 +85,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(
     JSON.stringify(
       {
-        example: 'privacy-wallet',
+        example: 'privacy-wallet (Phase 0.3)',
         publicKey: example.privacyAccount.publicKey,
         methods: [
           'privGetBalance',
-          'privGetNonce',
-          'privTransfer',
-          'privShield',
-          'privUnshield',
+          'privGetNonce (unified)',
+          'sendEncryptedTransfer (standard SignerTx)',
         ],
       },
       null,

@@ -192,9 +192,10 @@ test('public client uses the chain default RPC URL and returns native quantities
   })
 
   await expect(client.getChainId()).resolves.toBe(BigInt(tosTestnet.id))
+  // Phase 0.3: getBalance returns hex commitment, not bigint
   await expect(
     client.getBalance({ address: nativeAccounts[0]!.address }),
-  ).resolves.toBe(42n)
+  ).resolves.toBe(toHex(42n))
   await expect(
     client.getTransactionCount({ address: nativeAccounts[0]!.address }),
   ).resolves.toBe(7n)
@@ -545,51 +546,6 @@ test('public client exposes lease getters and transaction builders', async () =>
 })
 
 test('public client exposes privacy RPC helpers', async () => {
-  const transferRequest = {
-    from: nativeSignerVectors.elgamal.publicKey,
-    to: hexBytes('11', 32),
-    privNonce: 7n,
-    fee: 3n,
-    feeLimit: 5n,
-    commitment: hexBytes('22', 32),
-    senderHandle: hexBytes('33', 32),
-    receiverHandle: hexBytes('44', 32),
-    sourceCommitment: hexBytes('55', 32),
-    ctValidityProof: hexBytes('66', 160),
-    commitmentEqProof: hexBytes('77', 192),
-    rangeProof: hexBytes('88', 736),
-    encryptedMemo: hexBytes('99', 48),
-    memoSenderHandle: hexBytes('aa', 32),
-    memoReceiverHandle: hexBytes('bb', 32),
-    s: hexBytes('cc', 32),
-    e: hexBytes('dd', 32),
-  } as const
-  const shieldRequest = {
-    pubkey: nativeSignerVectors.elgamal.publicKey,
-    recipient: hexBytes('12', 32),
-    privNonce: 8n,
-    fee: 2n,
-    amount: 50n,
-    commitment: hexBytes('23', 32),
-    handle: hexBytes('34', 32),
-    shieldProof: hexBytes('45', 96),
-    rangeProof: hexBytes('56', 672),
-    s: hexBytes('67', 32),
-    e: hexBytes('78', 32),
-  } as const
-  const unshieldRequest = {
-    pubkey: nativeSignerVectors.elgamal.publicKey,
-    recipient: nativeAccounts[1]!.address,
-    privNonce: 9n,
-    fee: 4n,
-    amount: 75n,
-    sourceCommitment: hexBytes('89', 32),
-    commitmentEqProof: hexBytes('9a', 192),
-    rangeProof: hexBytes('ab', 672),
-    s: hexBytes('bc', 32),
-    e: hexBytes('cd', 32),
-  } as const
-
   const { calls, fetchFn } = createJsonRpcFetch((request) => {
     switch (request.method) {
       case 'tos_privGetBalance':
@@ -598,17 +554,11 @@ test('public client exposes privacy RPC helpers', async () => {
           commitment: hexBytes('01', 32),
           handle: hexBytes('02', 32),
           version: toHex(4n),
-          privNonce: toHex(7n),
+          nonce: toHex(7n),
           blockNumber: toHex(99n),
         }
-      case 'tos_privGetNonce':
+      case 'tos_getTransactionCount':
         return toHex(8n)
-      case 'tos_privTransfer':
-        return '0xaaaa'
-      case 'tos_privShield':
-        return '0xbbbb'
-      case 'tos_privUnshield':
-        return '0xcccc'
       default:
         throw new Error(`Unexpected method: ${request.method}`)
     }
@@ -629,79 +579,24 @@ test('public client exposes privacy RPC helpers', async () => {
     commitment: hexBytes('01', 32),
     handle: hexBytes('02', 32),
     version: 4n,
-    privNonce: 7n,
+    nonce: 7n,
     blockNumber: 99n,
   })
+  // Phase 0.3: privGetNonce now uses unified tos_getTransactionCount
   await expect(
     client.privGetNonce({
       pubkey: nativeSignerVectors.elgamal.publicKey,
       blockTag: 'pending',
     }),
   ).resolves.toBe(8n)
-  await expect(client.privTransfer(transferRequest)).resolves.toBe('0xaaaa')
-  await expect(client.privShield(shieldRequest)).resolves.toBe('0xbbbb')
-  await expect(client.privUnshield(unshieldRequest)).resolves.toBe('0xcccc')
 
   expect(calls[0]!.request).toMatchObject({
     method: 'tos_privGetBalance',
     params: [nativeSignerVectors.elgamal.publicKey, toHex(99n)],
   })
   expect(calls[1]!.request).toMatchObject({
-    method: 'tos_privGetNonce',
+    method: 'tos_getTransactionCount',
     params: [nativeSignerVectors.elgamal.publicKey, 'pending'],
-  })
-  expect(calls[2]!.request).toMatchObject({
-    method: 'tos_privTransfer',
-    params: [{
-      from: transferRequest.from,
-      to: transferRequest.to,
-      privNonce: toHex(7n),
-      fee: toHex(3n),
-      feeLimit: toHex(5n),
-      commitment: transferRequest.commitment,
-      senderHandle: transferRequest.senderHandle,
-      receiverHandle: transferRequest.receiverHandle,
-      sourceCommitment: transferRequest.sourceCommitment,
-      ctValidityProof: transferRequest.ctValidityProof,
-      commitmentEqProof: transferRequest.commitmentEqProof,
-      rangeProof: transferRequest.rangeProof,
-      encryptedMemo: transferRequest.encryptedMemo,
-      memoSenderHandle: transferRequest.memoSenderHandle,
-      memoReceiverHandle: transferRequest.memoReceiverHandle,
-      s: transferRequest.s,
-      e: transferRequest.e,
-    }],
-  })
-  expect(calls[3]!.request).toMatchObject({
-    method: 'tos_privShield',
-    params: [{
-      pubkey: shieldRequest.pubkey,
-      recipient: shieldRequest.recipient,
-      privNonce: toHex(8n),
-      fee: toHex(2n),
-      amount: toHex(50n),
-      commitment: shieldRequest.commitment,
-      handle: shieldRequest.handle,
-      shieldProof: shieldRequest.shieldProof,
-      rangeProof: shieldRequest.rangeProof,
-      s: shieldRequest.s,
-      e: shieldRequest.e,
-    }],
-  })
-  expect(calls[4]!.request).toMatchObject({
-    method: 'tos_privUnshield',
-    params: [{
-      pubkey: unshieldRequest.pubkey,
-      recipient: nativeAccounts[1]!.address,
-      privNonce: toHex(9n),
-      fee: toHex(4n),
-      amount: toHex(75n),
-      sourceCommitment: unshieldRequest.sourceCommitment,
-      commitmentEqProof: unshieldRequest.commitmentEqProof,
-      rangeProof: unshieldRequest.rangeProof,
-      s: unshieldRequest.s,
-      e: unshieldRequest.e,
-    }],
   })
 })
 
@@ -787,7 +682,7 @@ test('wallet client inherits privacy RPC helpers', async () => {
   const account = privateKeyToAccount(accounts[0]!.privateKey)
   const { calls, fetchFn } = createJsonRpcFetch((request) => {
     switch (request.method) {
-      case 'tos_privGetNonce':
+      case 'tos_getTransactionCount':
         return toHex(12n)
       default:
         throw new Error(`Unexpected method: ${request.method}`)
@@ -800,6 +695,7 @@ test('wallet client inherits privacy RPC helpers', async () => {
     transport: http(undefined, { fetchFn }),
   })
 
+  // Phase 0.3: privGetNonce now uses unified tos_getTransactionCount
   await expect(
     client.privGetNonce({
       pubkey: nativeSignerVectors.elgamal.publicKey,
@@ -808,7 +704,7 @@ test('wallet client inherits privacy RPC helpers', async () => {
   ).resolves.toBe(12n)
 
   expect(calls[0]!.request).toMatchObject({
-    method: 'tos_privGetNonce',
+    method: 'tos_getTransactionCount',
     params: [nativeSignerVectors.elgamal.publicKey, 'latest'],
   })
 })

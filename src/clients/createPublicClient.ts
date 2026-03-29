@@ -72,12 +72,10 @@ import type {
 import type { Address } from '../types/address.js'
 import type { Hex } from '../types/misc.js'
 import type {
+  EncryptedBalanceInfo,
   GetPrivBalanceParameters,
   GetPrivNonceParameters,
   PrivBalanceRecord,
-  PrivShieldParameters,
-  PrivTransferParameters,
-  PrivUnshieldParameters,
 } from '../types/privacy.js'
 import type {
   AuditorDecryptParams,
@@ -175,12 +173,25 @@ export function createPublicClient(
       return parseRpcQuantity(await request<Hex>('tos_blockNumber'))
     },
     async getBalance({ address, blockTag = 'latest' }) {
-      return parseRpcQuantity(
-        await request<Hex>('tos_getBalance', [
-          getAddress(address),
-          normalizeBlockTag(blockTag),
-        ]),
+      // Phase 0.3: returns encrypted commitment (32 bytes hex), not plaintext bigint
+      const result = await request<Hex>('tos_getBalance', [
+        getAddress(address),
+        normalizeBlockTag(blockTag),
+      ])
+      return result as Hex  // "0x..." 64-char hex string (32 bytes)
+    },
+    async getEncryptedBalance({ address, blockTag = 'latest' }): Promise<EncryptedBalanceInfo> {
+      // Uses privGetBalance which now returns account-level encrypted balance fields
+      const result = await request<RpcEncryptedBalanceResult>(
+        'tos_privGetBalance',
+        [getAddress(address), normalizeBlockTag(blockTag)],
       )
+      return {
+        balance: result.balance,
+        handle: result.handle,
+        version: parseRpcQuantity(result.version),
+        nonce: parseRpcQuantity(result.nonce),
+      }
     },
     async getTransactionCount({ address, blockTag = 'pending' }) {
       return parseRpcQuantity(
@@ -219,27 +230,14 @@ export function createPublicClient(
       pubkey,
       blockTag = 'latest',
     }: GetPrivNonceParameters) {
+      // Phase 0.3: nonce is unified — use tos_getTransactionCount instead
+      // of the removed tos_privGetNonce RPC.
       return parseRpcQuantity(
-        await request<Hex>('tos_privGetNonce', [
+        await request<Hex>('tos_getTransactionCount', [
           pubkey,
           normalizeBlockTag(blockTag),
         ]),
       )
-    },
-    async privTransfer(parameters: PrivTransferParameters) {
-      return request<Hex>('tos_privTransfer', [
-        serializePrivTransferParameters(parameters),
-      ])
-    },
-    async privShield(parameters: PrivShieldParameters) {
-      return request<Hex>('tos_privShield', [
-        serializePrivShieldParameters(parameters),
-      ])
-    },
-    async privUnshield(parameters: PrivUnshieldParameters) {
-      return request<Hex>('tos_privUnshield', [
-        serializePrivUnshieldParameters(parameters),
-      ])
     },
     // -- Selective Disclosure --
     async privProveDisclosure(parameters: DisclosureProofParams) {
@@ -974,8 +972,15 @@ type RpcPrivBalanceResult = {
   commitment: Hex
   handle: Hex
   version: Hex
-  privNonce: Hex
+  nonce: Hex
   blockNumber: Hex
+}
+
+type RpcEncryptedBalanceResult = {
+  balance: Hex
+  handle: Hex
+  version: Hex
+  nonce: Hex
 }
 
 type RpcBuiltTransactionResult = {
@@ -1038,65 +1043,6 @@ function serializeLeaseDeployParameters(parameters: LeaseDeployParameters) {
     ...(typeof parameters.value !== 'undefined'
       ? { value: numberToHex(parameters.value) }
       : {}),
-  }
-}
-
-function serializePrivTransferParameters(parameters: PrivTransferParameters) {
-  return {
-    from: parameters.from,
-    to: parameters.to,
-    privNonce: numberToHex(parameters.privNonce),
-    fee: numberToHex(parameters.fee),
-    feeLimit: numberToHex(parameters.feeLimit),
-    commitment: parameters.commitment,
-    senderHandle: parameters.senderHandle,
-    receiverHandle: parameters.receiverHandle,
-    sourceCommitment: parameters.sourceCommitment,
-    ctValidityProof: parameters.ctValidityProof,
-    commitmentEqProof: parameters.commitmentEqProof,
-    rangeProof: parameters.rangeProof,
-    ...(typeof parameters.encryptedMemo !== 'undefined'
-      ? { encryptedMemo: parameters.encryptedMemo }
-      : {}),
-    ...(typeof parameters.memoSenderHandle !== 'undefined'
-      ? { memoSenderHandle: parameters.memoSenderHandle }
-      : {}),
-    ...(typeof parameters.memoReceiverHandle !== 'undefined'
-      ? { memoReceiverHandle: parameters.memoReceiverHandle }
-      : {}),
-    s: parameters.s,
-    e: parameters.e,
-  }
-}
-
-function serializePrivShieldParameters(parameters: PrivShieldParameters) {
-  return {
-    pubkey: parameters.pubkey,
-    recipient: parameters.recipient,
-    privNonce: numberToHex(parameters.privNonce),
-    fee: numberToHex(parameters.fee),
-    amount: numberToHex(parameters.amount),
-    commitment: parameters.commitment,
-    handle: parameters.handle,
-    shieldProof: parameters.shieldProof,
-    rangeProof: parameters.rangeProof,
-    s: parameters.s,
-    e: parameters.e,
-  }
-}
-
-function serializePrivUnshieldParameters(parameters: PrivUnshieldParameters) {
-  return {
-    pubkey: parameters.pubkey,
-    recipient: getAddress(parameters.recipient),
-    privNonce: numberToHex(parameters.privNonce),
-    fee: numberToHex(parameters.fee),
-    amount: numberToHex(parameters.amount),
-    sourceCommitment: parameters.sourceCommitment,
-    commitmentEqProof: parameters.commitmentEqProof,
-    rangeProof: parameters.rangeProof,
-    s: parameters.s,
-    e: parameters.e,
   }
 }
 
@@ -1218,7 +1164,7 @@ function parsePrivBalanceResult(result: RpcPrivBalanceResult): PrivBalanceRecord
     commitment: result.commitment,
     handle: result.handle,
     version: parseRpcQuantity(result.version),
-    privNonce: parseRpcQuantity(result.privNonce),
+    nonce: parseRpcQuantity(result.nonce),
     blockNumber: parseRpcQuantity(result.blockNumber),
   }
 }

@@ -174,13 +174,10 @@ export type {
   SettlementReceipt,
 } from './types/settlement.js'
 export type {
+  EncryptedBalanceInfo,
   GetPrivBalanceParameters,
   GetPrivNonceParameters,
   PrivBalanceRecord,
-  PrivShieldParameters,
-  PrivTransferParameters,
-  PrivTxCommonParameters,
-  PrivUnshieldParameters,
 } from './types/privacy.js'
 export type {
   AuditorDecryptParams,

@@ -88,6 +88,16 @@ function serializeTransactionNative(
     to,
     trustTier,
     value,
+    // Phase 0.3: encrypted transfer fields
+    commitment,
+    senderHandle,
+    receiverHandle,
+    sourceCommitment,
+    ctValidityProof,
+    commitmentEqProof,
+    rangeProof,
+    auditorHandle,
+    encryptedMemo,
   } = transaction
 
   assertTransactionNative(transaction)
@@ -109,6 +119,16 @@ function serializeTransactionNative(
     sponsorPolicyHash ?? zeroHash,
     toOptionalUint8Hex(terminalClass),
     toOptionalUint8Hex(trustTier),
+    // Phase 0.3: encrypted transfer fields (match Go SignerTx struct order)
+    commitment ?? '0x',
+    senderHandle ?? '0x',
+    receiverHandle ?? '0x',
+    sourceCommitment ?? '0x',
+    ctValidityProof ?? '0x',
+    commitmentEqProof ?? '0x',
+    rangeProof ?? '0x',
+    auditorHandle ?? '0x',
+    encryptedMemo ?? '0x',
     ...toNativeSignatureArray(executionSignature(signature)),
     ...toNativeSignatureArray(sponsorSignature(signature), true),
   ]

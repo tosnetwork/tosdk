@@ -1,5 +1,5 @@
 /**
- * Selective disclosure types for UNO confidential balances.
+ * Selective disclosure types for confidential balances.
  */
 
 /** Parameters for generating a disclosure proof. */
@@ -12,7 +12,7 @@ export interface DisclosureProofParams {
   commitment: string
   /** 32-byte hex handle */
   handle: string
-  /** Plaintext amount in UNO base units */
+  /** Plaintext amount in base units (tomi) */
   amount: bigint
   /** Block number for freshness binding */
   blockNumber: bigint
@@ -74,7 +74,7 @@ export interface DecryptionTokenParams {
 
 /** Result of decrypting with a token. */
 export interface TokenDecryptResult {
-  /** Recovered plaintext amount in UNO base units */
+  /** Recovered plaintext amount in base units (tomi) */
   amount: bigint
 }
 

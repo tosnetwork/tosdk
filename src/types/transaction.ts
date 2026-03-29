@@ -20,6 +20,17 @@ export type TransactionSerializableNative = {
   sponsorPolicyHash?: Hex | undefined
   terminalClass?: number | undefined
   trustTier?: number | undefined
+
+  // Phase 0.3: encrypted transfer fields (optional, for commitment-based transfers)
+  commitment?: Hex | undefined           // [32]byte transfer commitment
+  senderHandle?: Hex | undefined         // [32]byte sender handle
+  receiverHandle?: Hex | undefined       // [32]byte receiver handle
+  sourceCommitment?: Hex | undefined     // [32]byte source commitment
+  ctValidityProof?: Hex | undefined      // ~160 bytes ciphertext validity proof
+  commitmentEqProof?: Hex | undefined    // ~192 bytes commitment equality proof
+  rangeProof?: Hex | undefined           // ~736 bytes range proof
+  auditorHandle?: Hex | undefined        // [32]byte optional auditor handle
+  encryptedMemo?: Hex | undefined        // optional encrypted memo
 }
 
 export type TerminalClass = 0 | 1 | 2 | 3 | 4 | 5 | 6

@@ -40,12 +40,10 @@ import type {
   ValidatorInfo,
 } from './dpos.js'
 import type {
+  EncryptedBalanceInfo,
   GetPrivBalanceParameters,
   GetPrivNonceParameters,
   PrivBalanceRecord,
-  PrivShieldParameters,
-  PrivTransferParameters,
-  PrivUnshieldParameters,
 } from './privacy.js'
 import type {
   AuditorDecryptParams,
@@ -440,10 +438,15 @@ export type PublicClient = {
   request<T>(method: string, params?: readonly unknown[]): Promise<T>
   getChainId(): Promise<bigint>
   getBlockNumber(): Promise<bigint>
+  // Phase 0.3: returns encrypted commitment (32 bytes hex), not plaintext bigint
   getBalance(parameters: {
     address: Address
     blockTag?: BlockTag | undefined
-  }): Promise<bigint>
+  }): Promise<Hex>
+  getEncryptedBalance(parameters: {
+    address: Address
+    blockTag?: BlockTag | undefined
+  }): Promise<EncryptedBalanceInfo>
   getTransactionCount(parameters: {
     address: Address
     blockTag?: BlockTag | undefined
@@ -458,9 +461,6 @@ export type PublicClient = {
   }): Promise<RpcSignerProfile>
   privGetBalance(parameters: GetPrivBalanceParameters): Promise<PrivBalanceRecord>
   privGetNonce(parameters: GetPrivNonceParameters): Promise<bigint>
-  privTransfer(parameters: PrivTransferParameters): Promise<Hex>
-  privShield(parameters: PrivShieldParameters): Promise<Hex>
-  privUnshield(parameters: PrivUnshieldParameters): Promise<Hex>
   // -- Selective Disclosure --
   privProveDisclosure(parameters: DisclosureProofParams): Promise<DisclosureProofResult>
   privVerifyDisclosure(parameters: VerifyDisclosureParams): Promise<boolean>
@@ -783,6 +783,17 @@ export type SignTransactionParameters = {
   sponsorExpiry?: number | bigint | undefined
   sponsorPolicyHash?: Hex | undefined
   sponsorSignature?: Signature | undefined
+
+  // Phase 0.3: encrypted transfer fields (optional, for commitment-based transfers)
+  commitment?: Hex | undefined
+  senderHandle?: Hex | undefined
+  receiverHandle?: Hex | undefined
+  sourceCommitment?: Hex | undefined
+  ctValidityProof?: Hex | undefined
+  commitmentEqProof?: Hex | undefined
+  rangeProof?: Hex | undefined
+  auditorHandle?: Hex | undefined
+  encryptedMemo?: Hex | undefined
 }
 
 export type SendSystemActionParameters = {
