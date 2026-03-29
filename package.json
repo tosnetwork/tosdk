@@ -102,13 +102,13 @@
     "node": ">=20"
   },
   "license": "MIT",
-  "homepage": "https://gitlab.com/tos-network/tosdk",
+  "homepage": "https://github.com/tosnetwork/tosdk",
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/tos-network/tosdk.git"
+    "url": "git+https://github.com/tosnetwork/tosdk.git"
   },
   "bugs": {
-    "url": "https://gitlab.com/tos-network/tosdk/-/issues"
+    "url": "https://github.com/tosnetwork/tosdk/-/issues"
   },
   "publishConfig": {
     "access": "public"

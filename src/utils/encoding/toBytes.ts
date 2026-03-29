@@ -29,8 +29,8 @@ export type ToBytesErrorType =
 /**
  * Encodes a UTF-8 string, hex value, bigint, number or boolean to a byte array.
  *
- * - Docs: https://gitlab.com/tos-network/tosdk
- * - Example: https://gitlab.com/tos-network/tosdk
+ * - Docs: https://github.com/tosnetwork/tosdk
+ * - Example: https://github.com/tosnetwork/tosdk
  *
  * @param value Value to encode.
  * @param opts Options.
@@ -75,7 +75,7 @@ export type BoolToBytesErrorType =
 /**
  * Encodes a boolean into a byte array.
  *
- * - Docs: https://gitlab.com/tos-network/tosdk
+ * - Docs: https://github.com/tosnetwork/tosdk
  *
  * @param value Boolean value to encode.
  * @param opts Options.
@@ -131,7 +131,7 @@ export type HexToBytesErrorType = AssertSizeErrorType | PadErrorType | ErrorType
 /**
  * Encodes a hex string into a byte array.
  *
- * - Docs: https://gitlab.com/tos-network/tosdk
+ * - Docs: https://github.com/tosnetwork/tosdk
  *
  * @param hex Hex string to encode.
  * @param opts Options.
@@ -182,7 +182,7 @@ export type NumberToBytesErrorType =
 /**
  * Encodes a number into a byte array.
  *
- * - Docs: https://gitlab.com/tos-network/tosdk
+ * - Docs: https://github.com/tosnetwork/tosdk
  *
  * @param value Number to encode.
  * @param opts Options.
@@ -219,7 +219,7 @@ export type StringToBytesErrorType =
 /**
  * Encodes a UTF-8 string into a byte array.
  *
- * - Docs: https://gitlab.com/tos-network/tosdk
+ * - Docs: https://github.com/tosnetwork/tosdk
  *
  * @param value String to encode.
  * @param opts Options.

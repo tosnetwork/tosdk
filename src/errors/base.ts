@@ -12,7 +12,7 @@ let errorConfig: ErrorConfig = {
     docsSlug,
   }: BaseErrorParameters) =>
     docsPath
-      ? `${docsBaseUrl ?? 'https://gitlab.com/tos-network/tosdk'}${docsPath}${
+      ? `${docsBaseUrl ?? 'https://github.com/tosnetwork/tosdk'}${docsPath}${
           docsSlug ? `#${docsSlug}` : ''
         }`
       : undefined,
