@@ -389,6 +389,11 @@ export {
   type HashTransactionErrorType,
 } from './utils/transaction/hashTransaction.js'
 export { serializeTransaction } from './utils/transaction/serializeTransaction.js'
+export { decryptBalance } from './utils/crypto/decryptBalance.js'
+export {
+  buildEncryptedTransfer,
+  type EncryptedTransferFields,
+} from './utils/crypto/buildEncryptedTransfer.js'
 
 // -- Reusable SDK Surfaces --
 export {

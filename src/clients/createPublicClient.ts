@@ -215,6 +215,13 @@ export function createPublicClient(
         normalizeBlockTag(blockTag),
       ])
     },
+    async getReceiveKey({ address, blockTag = 'latest' }) {
+      const result = await request<Hex>('tos_getReceiveKey', [
+        getAddress(address),
+        normalizeBlockTag(blockTag),
+      ])
+      return result
+    },
     async privGetBalance({
       pubkey,
       blockTag = 'latest',

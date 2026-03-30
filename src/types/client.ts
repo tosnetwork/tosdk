@@ -459,6 +459,10 @@ export type PublicClient = {
     address: Address
     blockTag?: BlockTag | undefined
   }): Promise<RpcSignerProfile>
+  getReceiveKey(parameters: {
+    address: Address
+    blockTag?: BlockTag | undefined
+  }): Promise<Hex>
   privGetBalance(parameters: GetPrivBalanceParameters): Promise<PrivBalanceRecord>
   privGetNonce(parameters: GetPrivNonceParameters): Promise<bigint>
   // -- Selective Disclosure --
