@@ -117,12 +117,12 @@ test('paymaster provider client builds authorize requests and calls provider end
       '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     sponsorAddress:
       '0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-    sponsorSignerType: 'secp256k1',
+    sponsorSignerType: 'ed25519',
     walletAddress:
       '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
     requesterAddress:
       '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-    requesterSignerType: 'secp256k1',
+    requesterSignerType: 'ed25519',
     targetAddress:
       '0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
     valueTomi: '0',

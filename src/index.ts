@@ -1,10 +1,7 @@
 export type { LocalAccount, PrivateKeyAccount } from './accounts/types.js'
 export {
-  bls12381PrivateKeyToAccount,
-  elgamalPrivateKeyToAccount,
   generatePrivateKey,
   privateKeyToAccount,
-  secp256r1PrivateKeyToAccount,
   hdKeyToAccount,
   mnemonicToAccount,
   toAccount,
@@ -332,12 +329,17 @@ export {
   hashSettlementReceipt,
   hashSettlementValue,
 } from './utils/settlement.js'
+/** @deprecated ed25519 does not support public key recovery from signatures. Use verifyMessage with an explicit publicKey instead. */
 export {
   recoverAddress,
   type RecoverAddressErrorType,
 } from './utils/signature/recoverAddress.js'
 export {
-  blsSignatureDst,
+  encodeActivationAddress,
+  decodeActivationAddress,
+  deriveOnChainAddress,
+} from './utils/address/activationAddress.js'
+export {
   elgamalPublicKeyFromPrivateKey,
   normalizeSignerType,
   publicKeyToNativeAddress,

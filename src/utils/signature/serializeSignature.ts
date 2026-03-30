@@ -1,10 +1,11 @@
-import { secp256k1 } from '@noble/curves/secp256k1'
-
 import type { ErrorType } from '../../errors/utils.js'
 import type { ByteArray, Hex, Signature } from '../../types/misc.js'
-import { type HexToBigIntErrorType, hexToBigInt } from '../encoding/fromHex.js'
+import { type HexToBigIntErrorType } from '../encoding/fromHex.js'
 import { hexToBytes } from '../encoding/toBytes.js'
+import { bytesToHex } from '../encoding/toHex.js'
 import type { ToHexErrorType } from '../encoding/toHex.js'
+import { pad } from '../data/pad.js'
+import { concat } from '../data/concat.js'
 
 type To = 'bytes' | 'hex'
 
@@ -22,7 +23,7 @@ export type SerializeSignatureErrorType =
   | ErrorType
 
 /**
- * @description Converts a signature into hex format.
+ * @description Converts a signature into hex format (r ++ s ++ v).
  *
  * @param signature The signature to convert.
  * @returns The signature in hex format.
@@ -47,10 +48,11 @@ export function serializeSignature<to extends To = 'hex'>({
     if (v && (v === 27n || v === 28n || v >= 35n)) return v % 2n === 0n ? 1 : 0
     throw new Error('Invalid `v` or `yParity` value')
   })()
-  const signature = `0x${new secp256k1.Signature(
-    hexToBigInt(r),
-    hexToBigInt(s),
-  ).toCompactHex()}${yParity_ === 0 ? '1b' : '1c'}` as const
+  const rBytes = pad(hexToBytes(r), { size: 32 })
+  const sBytes = pad(hexToBytes(s), { size: 32 })
+  const vByte = new Uint8Array([yParity_ === 0 ? 0x1b : 0x1c])
+  const signatureBytes = concat([rBytes, sBytes, vByte])
+  const signature = bytesToHex(signatureBytes) as Hex
 
   if (to === 'hex') return signature as SerializeSignatureReturnType<to>
   return hexToBytes(signature) as SerializeSignatureReturnType<to>

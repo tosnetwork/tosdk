@@ -1,7 +1,4 @@
-import { bls12_381 } from '@noble/curves/bls12-381'
 import { ed25519, ristretto255 } from '@noble/curves/ed25519'
-import { p256 } from '@noble/curves/nist'
-import { secp256k1 } from '@noble/curves/secp256k1'
 import { sha3_512 } from '@noble/hashes/sha3'
 
 import { type ErrorType } from '../../errors/utils.js'
@@ -14,30 +11,15 @@ import { hexToBytes } from '../../utils/encoding/toBytes.js'
 import { bytesToHex } from '../../utils/encoding/toHex.js'
 import { keccak256 } from '../../utils/hash/keccak256.js'
 
-export const blsSignatureDst = 'GTOS_BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_'
-
-type SignerType =
-  | 'secp256k1'
-  | 'secp256r1'
-  | 'ed25519'
-  | 'bls12-381'
-  | 'elgamal'
+type SignerType = 'ed25519' | 'elgamal'
 
 type To = 'object' | 'bytes' | 'hex'
 
 export type NormalizeSignerTypeErrorType = ErrorType
 
 export function normalizeSignerType(value?: string): SignerType {
-  const normalized = (value || 'secp256k1').trim().toLowerCase()
-  if (normalized === 'ethereum_secp256k1') return 'secp256k1'
-  if (normalized === 'bls12381') return 'bls12-381'
-  if (
-    normalized === 'secp256k1' ||
-    normalized === 'secp256r1' ||
-    normalized === 'ed25519' ||
-    normalized === 'bls12-381' ||
-    normalized === 'elgamal'
-  ) {
+  const normalized = (value || 'ed25519').trim().toLowerCase()
+  if (normalized === 'ed25519' || normalized === 'elgamal') {
     return normalized
   }
   throw new Error(`Unsupported signer type: ${value || 'undefined'}`)
@@ -76,21 +58,9 @@ export function publicKeyToNativeAddress({
   publicKey,
   signerType,
 }: PublicKeyToNativeAddressParameters): Address {
-  const normalizedSignerType = normalizeSignerType(signerType)
+  normalizeSignerType(signerType) // validate
   const publicKeyBytes = hexToBytes(publicKey)
-  let hashInput: Hex
-
-  if (normalizedSignerType === 'secp256k1' || normalizedSignerType === 'secp256r1') {
-    const point =
-      normalizedSignerType === 'secp256k1'
-        ? secp256k1.ProjectivePoint.fromHex(publicKeyBytes)
-        : p256.ProjectivePoint.fromHex(publicKeyBytes)
-    const uncompressed = point.toRawBytes(false)
-    hashInput = bytesToHex(uncompressed.slice(1))
-  } else {
-    hashInput = bytesToHex(publicKeyBytes)
-  }
-
+  const hashInput = bytesToHex(publicKeyBytes)
   return getAddress(keccak256(hashInput))
 }
 
@@ -99,27 +69,20 @@ export async function signHash<to extends To = 'object'>({
   privateKey,
   signerType,
   to = 'object',
-  extraEntropy,
 }: SignHashParameters<to>): Promise<SignHashReturnType<to>> {
   const normalizedSignerType = normalizeSignerType(signerType)
   const hashBytes = hexToBytes(hash)
   const privateKeyBytes = hexToBytes(privateKey)
 
   const rawSignature =
-    normalizedSignerType === 'secp256k1'
-      ? signSecp256k1(hashBytes, privateKeyBytes, extraEntropy)
-      : normalizedSignerType === 'secp256r1'
-        ? signSecp256r1(hashBytes, privateKeyBytes)
-        : normalizedSignerType === 'ed25519'
-          ? ed25519.sign(hashBytes, privateKeyBytes)
-          : normalizedSignerType === 'bls12-381'
-            ? bls12_381.sign(hashBytes, privateKeyBytes, { DST: blsSignatureDst })
-            : signElgamal(hashBytes, privateKeyBytes)
+    normalizedSignerType === 'ed25519'
+      ? ed25519.sign(hashBytes, privateKeyBytes)
+      : signElgamal(hashBytes, privateKeyBytes)
 
-  const signatureObject = rawBytesToSignature(rawSignature, normalizedSignerType)
+  const signatureObject = rawBytesToSignature(rawSignature)
   return (() => {
-    if (to === 'bytes') return signatureToCanonicalBytes(signatureObject, normalizedSignerType)
-    if (to === 'hex') return signatureToCanonicalHex(signatureObject, normalizedSignerType)
+    if (to === 'bytes') return signatureToCanonicalBytes(signatureObject)
+    if (to === 'hex') return signatureToCanonicalHex(signatureObject)
     return signatureObject
   })() as SignHashReturnType<to>
 }
@@ -133,27 +96,10 @@ export async function verifyHashSignature({
   const normalizedSignerType = normalizeSignerType(signerType)
   const hashBytes = hexToBytes(hash)
   const publicKeyBytes = hexToBytes(publicKey)
-  const signatureBytes = signatureToRawBytes(signature, normalizedSignerType)
+  const signatureBytes = signatureToRawBytes(signature)
 
-  if (normalizedSignerType === 'secp256k1') {
-    return secp256k1.verify(signatureBytes, hashBytes, publicKeyBytes, {
-      lowS: true,
-      prehash: false,
-    })
-  }
-  if (normalizedSignerType === 'secp256r1') {
-    return p256.verify(signatureBytes, hashBytes, publicKeyBytes, {
-      lowS: true,
-      prehash: false,
-    })
-  }
   if (normalizedSignerType === 'ed25519') {
     return ed25519.verify(signatureBytes, hashBytes, publicKeyBytes)
-  }
-  if (normalizedSignerType === 'bls12-381') {
-    return bls12_381.verify(signatureBytes, hashBytes, publicKeyBytes, {
-      DST: blsSignatureDst,
-    })
   }
   return verifyElgamal(hashBytes, publicKeyBytes, signatureBytes)
 }
@@ -172,132 +118,43 @@ export function elgamalPublicKeyFromPrivateKey(privateKey: Hex | ByteArray): Byt
 
 export function signatureToRawBytes(
   signature: Hex | ByteArray | Signature,
-  signerType?: string,
 ): ByteArray {
-  const normalizedSignerType = normalizeSignerType(signerType)
   if (typeof signature === 'string') {
-    return normalizeRawSignature(hexToBytes(signature), normalizedSignerType)
+    return normalizeRawSignature(hexToBytes(signature))
   }
   if (signature instanceof Uint8Array) {
-    return normalizeRawSignature(signature, normalizedSignerType)
+    return normalizeRawSignature(signature)
   }
 
-  const expectedPartLength = normalizedSignerType === 'bls12-381' ? 48 : 32
-  const r = pad(hexToBytes(signature.r as Hex), { size: expectedPartLength })
-  const s = pad(hexToBytes(signature.s as Hex), { size: expectedPartLength })
+  const r = pad(hexToBytes(signature.r as Hex), { size: 32 })
+  const s = pad(hexToBytes(signature.s as Hex), { size: 32 })
   return concat([r, s])
 }
 
-function signatureToCanonicalBytes(
-  signature: Signature,
-  signerType: SignerType,
-): ByteArray {
-  if (signerType === 'secp256k1') {
-    const recovery = signature.yParity ?? (signature.v === 28n ? 1 : 0)
-    return concat([
-      hexToBytes(signature.r as Hex),
-      hexToBytes(signature.s as Hex),
-      new Uint8Array([recovery === 0 ? 27 : 28]),
-    ])
-  }
-
-  const partLength = signerType === 'bls12-381' ? 48 : 32
+function signatureToCanonicalBytes(signature: Signature): ByteArray {
   return concat([
-    pad(hexToBytes(signature.r as Hex), { size: partLength }),
-    pad(hexToBytes(signature.s as Hex), { size: partLength }),
+    pad(hexToBytes(signature.r as Hex), { size: 32 }),
+    pad(hexToBytes(signature.s as Hex), { size: 32 }),
   ])
 }
 
-function signatureToCanonicalHex(
-  signature: Signature,
-  signerType: SignerType,
-): Hex {
-  return bytesToHex(signatureToCanonicalBytes(signature, signerType))
+function signatureToCanonicalHex(signature: Signature): Hex {
+  return bytesToHex(signatureToCanonicalBytes(signature))
 }
 
-function normalizeRawSignature(
-  signature: ByteArray,
-  signerType: SignerType,
-): ByteArray {
-  if (signerType === 'secp256k1') {
-    if (signature.length === 64) return signature
-    if (signature.length === 65) return signature.slice(0, 64)
-    throw new Error(`Invalid secp256k1 signature length: ${signature.length}`)
-  }
-  if (signerType === 'secp256r1') {
-    if (signature.length === 64) return signature
-    if (signature.length === 65 && signature[64] === 0) return signature.slice(0, 64)
-    throw new Error(`Invalid secp256r1 signature length: ${signature.length}`)
-  }
-  if (signerType === 'bls12-381') {
-    if (signature.length !== 96)
-      throw new Error(`Invalid bls12-381 signature length: ${signature.length}`)
-    return signature
-  }
+function normalizeRawSignature(signature: ByteArray): ByteArray {
   if (signature.length !== 64) {
-    throw new Error(`Invalid ${signerType} signature length: ${signature.length}`)
+    throw new Error(`Invalid signature length: ${signature.length}`)
   }
   return signature
 }
 
-function rawBytesToSignature(
-  signature: ByteArray,
-  signerType: SignerType,
-): Signature {
-  if (signerType === 'secp256k1') {
-    const compact = signature.length === 65 ? signature.slice(0, 64) : signature
-    const recovery = signature.length === 65 ? normalizeRecovery(signature[64]!) : 0
-    return {
-      r: bytesToHex(compact.slice(0, 32), { size: 32 }),
-      s: bytesToHex(compact.slice(32, 64), { size: 32 }),
-      v: recovery ? 28n : 27n,
-      yParity: recovery,
-    }
-  }
-
-  const partLength = signerType === 'bls12-381' ? 48 : 32
+function rawBytesToSignature(signature: ByteArray): Signature {
   return {
-    r: bytesToHex(signature.slice(0, partLength), { size: partLength }),
-    s: bytesToHex(signature.slice(partLength), { size: partLength }),
+    r: bytesToHex(signature.slice(0, 32), { size: 32 }),
+    s: bytesToHex(signature.slice(32), { size: 32 }),
     v: 0n,
   }
-}
-
-function signSecp256k1(
-  hash: ByteArray,
-  privateKey: ByteArray,
-  extraEntropy?: Hex | boolean | undefined,
-) {
-  const options = {
-    lowS: true,
-    prehash: false,
-    ...(extraEntropy !== undefined
-      ? {
-          extraEntropy:
-            typeof extraEntropy === 'string'
-              ? hexToBytes(extraEntropy as Hex)
-              : extraEntropy,
-        }
-      : {}),
-  } as const
-  const signature = secp256k1.sign(hash, privateKey, options)
-  const compact = signature.toCompactRawBytes()
-  return concat([
-    compact,
-    new Uint8Array([signature.recovery || 0]),
-  ])
-}
-
-function signSecp256r1(hash: ByteArray, privateKey: ByteArray) {
-  return p256.sign(hash, privateKey, {
-    lowS: true,
-    prehash: false,
-  }).toCompactRawBytes()
-}
-
-function normalizeRecovery(value: number) {
-  if (value === 27 || value === 28) return value - 27
-  return value & 1
 }
 
 function signElgamal(hash: ByteArray, privateKey: ByteArray): ByteArray {

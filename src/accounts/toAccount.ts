@@ -39,7 +39,7 @@ export function toAccount<accountSource extends AccountSource>(
     throw new InvalidAddressError({ address: source.address })
   return {
     address: source.address,
-    signerType: source.signerType ?? 'secp256k1',
+    signerType: source.signerType ?? 'ed25519',
     sign: source.sign,
     signAuthorization: source.signAuthorization,
     signMessage: source.signMessage,

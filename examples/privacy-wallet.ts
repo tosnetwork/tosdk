@@ -1,7 +1,7 @@
 import {
   createPublicClient,
   createWalletClient,
-  elgamalPrivateKeyToAccount,
+  privateKeyToAccount,
   http,
   tosTestnet,
 } from '../src/index.js'
@@ -20,7 +20,7 @@ import {
  */
 
 export function buildPrivacyWalletExample() {
-  const privacyAccount = elgamalPrivateKeyToAccount(
+  const privacyAccount = privateKeyToAccount(
     '0x0100000000000000000000000000000000000000000000000000000000000000',
   )
 

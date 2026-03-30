@@ -58,7 +58,7 @@ export async function buildAuthorizationExample() {
     chainId: '1666',
     providerAddress: sponsorAddress,
     sponsorAddress,
-    sponsorSignerType: 'secp256k1',
+    sponsorSignerType: 'ed25519',
     walletAddress: requesterAddress,
     requesterAddress,
     requesterSignerType: account.signerType,

@@ -794,6 +794,10 @@ export type SignTransactionParameters = {
   rangeProof?: Hex | undefined
   auditorHandle?: Hex | undefined
   encryptedMemo?: Hex | undefined
+
+  // Account activation fields (for first transfer to a new account)
+  recipientPubkey?: Hex | undefined
+  recipientReceiveKey?: Hex | undefined
 }
 
 export type SendSystemActionParameters = {

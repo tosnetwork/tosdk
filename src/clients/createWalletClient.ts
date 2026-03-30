@@ -78,9 +78,12 @@ export function createWalletClient(config: WalletClientConfig): WalletClient {
     rangeProof,
     auditorHandle,
     encryptedMemo,
+    // Account activation fields
+    recipientPubkey,
+    recipientReceiveKey,
   }: SignTransactionParameters): Promise<TransactionSerializableNative> => {
     const resolvedAccount = resolveAccount(account)
-    const resolvedSignerType = signerType ?? resolvedAccount.signerType ?? 'secp256k1'
+    const resolvedSignerType = signerType ?? resolvedAccount.signerType ?? 'ed25519'
     const resolvedFrom = getAddress(from ?? resolvedAccount.address)
     const needsSponsorNonce = typeof sponsor !== 'undefined' && typeof sponsorNonce === 'undefined'
     const [resolvedChainId, resolvedNonce, resolvedSponsorNonce] = await Promise.all([
@@ -111,7 +114,7 @@ export function createWalletClient(config: WalletClientConfig): WalletClient {
       ...(typeof sponsor !== 'undefined'
         ? {
             sponsor: getAddress(sponsor),
-            sponsorSignerType: sponsorSignerType ?? 'secp256k1',
+            sponsorSignerType: sponsorSignerType ?? 'ed25519',
             sponsorNonce: resolvedSponsorNonce!,
             sponsorExpiry: BigInt(sponsorExpiry!),
             sponsorPolicyHash: sponsorPolicyHash!,
@@ -129,6 +132,9 @@ export function createWalletClient(config: WalletClientConfig): WalletClient {
       ...(rangeProof ? { rangeProof } : {}),
       ...(auditorHandle ? { auditorHandle } : {}),
       ...(encryptedMemo ? { encryptedMemo } : {}),
+      // Account activation fields
+      ...(recipientPubkey ? { recipientPubkey } : {}),
+      ...(recipientReceiveKey ? { recipientReceiveKey } : {}),
     }
   }
 

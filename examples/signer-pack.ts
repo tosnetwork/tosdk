@@ -5,13 +5,11 @@
  * - Generate and import private keys
  * - Sign transactions
  * - Verify hash signatures
- * - Use different signer types (secp256k1, secp256r1, bls12-381)
+ * - ed25519 signing (TOS native signer type)
  */
 import {
   generatePrivateKey,
   privateKeyToAccount,
-  secp256r1PrivateKeyToAccount,
-  bls12381PrivateKeyToAccount,
   signHash,
   verifyHashSignature,
   publicKeyToNativeAddress,
@@ -22,22 +20,10 @@ import {
 import type { Hex } from '../src/index.js'
 
 export function buildSignerPack() {
-  /** Generate a fresh secp256k1 account */
-  function createSecp256k1Account() {
+  /** Generate a fresh ed25519 account */
+  function createAccount() {
     const privateKey = generatePrivateKey()
     return privateKeyToAccount(privateKey)
-  }
-
-  /** Generate a fresh secp256r1 account (uses secp256k1 entropy as seed) */
-  function createSecp256r1Account() {
-    const privateKey = generatePrivateKey()
-    return secp256r1PrivateKeyToAccount(privateKey)
-  }
-
-  /** Generate a fresh BLS12-381 account (uses secp256k1 entropy as seed) */
-  function createBls12381Account() {
-    const privateKey = generatePrivateKey()
-    return bls12381PrivateKeyToAccount(privateKey)
   }
 
   const demoPrivateKey =
@@ -46,9 +32,7 @@ export function buildSignerPack() {
 
   return {
     demoAccount,
-    createSecp256k1Account,
-    createSecp256r1Account,
-    createBls12381Account,
+    createAccount,
 
     /** Sign a hash and verify the signature */
     async signAndVerify(hash: Hex) {
@@ -84,7 +68,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         example: 'signer-pack',
         demoAddress: pack.demoAccount.address,
         demoSignerType: pack.demoAccount.signerType,
-        supportedTypes: ['secp256k1', 'secp256r1', 'bls12-381'],
+        supportedTypes: ['ed25519'],
       },
       null,
       2,

@@ -31,6 +31,10 @@ export type TransactionSerializableNative = {
   rangeProof?: Hex | undefined           // ~736 bytes range proof
   auditorHandle?: Hex | undefined        // [32]byte optional auditor handle
   encryptedMemo?: Hex | undefined        // optional encrypted memo
+
+  // Account activation fields (for first transfer to a new account)
+  recipientPubkey?: Hex | undefined      // ed25519 public key of recipient
+  recipientReceiveKey?: Hex | undefined  // ReceiveKey (ristretto255) of recipient
 }
 
 export type TerminalClass = 0 | 1 | 2 | 3 | 4 | 5 | 6

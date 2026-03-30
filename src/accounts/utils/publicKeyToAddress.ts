@@ -16,14 +16,14 @@ export type PublicKeyToAddressErrorType =
   | ErrorType
 
 /**
- * @description Converts an ECDSA public key to a 32-byte native address.
+ * @description Converts an ed25519 public key to a 32-byte native address.
  *
  * @param publicKey The public key to convert.
  *
  * @returns The address.
  */
 export function publicKeyToAddress(publicKey: Hex): Address {
-  return publicKeyToNativeAddress({ publicKey, signerType: 'secp256k1' })
+  return publicKeyToNativeAddress({ publicKey, signerType: 'ed25519' })
 }
 
 export function signerPublicKeyToAddress(
