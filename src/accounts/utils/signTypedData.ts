@@ -27,7 +27,7 @@ export type SignTypedDataErrorType =
 
 /**
  * @description Signs typed data using the canonical typed-data digest:
- * `sign(keccak256("\x19\x01" ‖ domainSeparator ‖ hashStruct(message)))`.
+ * `sign(blake3("\x19\x01" ‖ domainSeparator ‖ hashStruct(message)))`.
  *
  * @returns The signature.
  */

@@ -4,14 +4,14 @@ import type { PackageArgument } from '../../types/contract.js'
 import type { Hex } from '../../types/misc.js'
 import { encodeAbiParameters } from '../abi/encodeAbiParameters.js'
 import { toHex } from '../encoding/toHex.js'
-import { keccak256 } from '../hash/keccak256.js'
+import { blake3Hash } from '../hash/blake3.js'
 
 function concatHexParts(parts: readonly Hex[]): Hex {
   return `0x${parts.map((part) => part.slice(2)).join('')}` as Hex
 }
 
 function toSelector(prefix: string, value: string): Hex {
-  return `0x${keccak256(toHex(`${prefix}${value}`)).slice(2, 10)}` as Hex
+  return `0x${blake3Hash(toHex(`${prefix}${value}`)).slice(2, 10)}` as Hex
 }
 
 function toAbiParameters(args: readonly PackageArgument[]): readonly AbiParameter[] {

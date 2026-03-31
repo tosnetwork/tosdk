@@ -16,7 +16,7 @@ import {
 } from '../abi/encodeAbiParameters.js'
 import { concat } from '../data/concat.js'
 import { type ToHexErrorType, toHex } from '../encoding/toHex.js'
-import { type Keccak256ErrorType, keccak256 } from '../hash/keccak256.js'
+import { type Blake3ErrorType, blake3Hash } from '../hash/blake3.js'
 import {
   type GetTypesForEIP712DomainErrorType,
   getTypesForEIP712Domain,
@@ -86,7 +86,7 @@ export function hashTypedData<
       }),
     )
 
-  return keccak256(concat(parts))
+  return blake3Hash(concat(parts))
 }
 
 export type HashDomainErrorType = HashStructErrorType | ErrorType
@@ -106,7 +106,7 @@ export function hashDomain<
 
 export type HashStructErrorType =
   | EncodeDataErrorType
-  | Keccak256ErrorType
+  | Blake3ErrorType
   | ErrorType
 
 export function hashStruct<
@@ -122,7 +122,7 @@ export function hashStruct<
     primaryType,
     types: types as Record<string, readonly MessageTypeProperty[]>,
   })
-  return keccak256(encoded)
+  return blake3Hash(encoded)
 }
 
 type EncodeDataErrorType =
@@ -160,7 +160,7 @@ function encodeData({
 type HashTypeErrorType =
   | ToHexErrorType
   | EncodeTypeErrorType
-  | Keccak256ErrorType
+  | Blake3ErrorType
   | ErrorType
 
 function hashType({
@@ -171,7 +171,7 @@ function hashType({
   types: Record<string, readonly MessageTypeProperty[]>
 }) {
   const encodedHashType = toHex(encodeType({ primaryType, types }))
-  return keccak256(encodedHashType)
+  return blake3Hash(encodedHashType)
 }
 
 type EncodeTypeErrorType = FindTypeDependenciesErrorType
@@ -224,7 +224,7 @@ function findTypeDependencies(
 }
 
 type EncodeFieldErrorType =
-  | Keccak256ErrorType
+  | Blake3ErrorType
   | EncodeAbiParametersErrorType
   | ToHexErrorType
   | ErrorType
@@ -243,13 +243,13 @@ function encodeField({
   if (types[type] !== undefined) {
     return [
       { type: 'bytes32' },
-      keccak256(encodeData({ data: value, primaryType: type, types })),
+      blake3Hash(encodeData({ data: value, primaryType: type, types })),
     ]
   }
 
-  if (type === 'bytes') return [{ type: 'bytes32' }, keccak256(value)]
+  if (type === 'bytes') return [{ type: 'bytes32' }, blake3Hash(value)]
 
-  if (type === 'string') return [{ type: 'bytes32' }, keccak256(toHex(value))]
+  if (type === 'string') return [{ type: 'bytes32' }, blake3Hash(toHex(value))]
 
   if (type.lastIndexOf(']') === type.length - 1) {
     const parsedType = type.slice(0, type.lastIndexOf('['))
@@ -263,7 +263,7 @@ function encodeField({
     )
     return [
       { type: 'bytes32' },
-      keccak256(
+      blake3Hash(
         encodeAbiParameters(
           typeValuePairs.map(([t]) => t),
           typeValuePairs.map(([, v]) => v),

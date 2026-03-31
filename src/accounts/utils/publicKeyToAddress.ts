@@ -4,14 +4,14 @@ import type { Hex } from '../../types/misc.js'
 import {
   type GetAddressErrorType,
 } from '../../utils/address/getAddress.js'
-import { type Keccak256ErrorType } from '../../utils/hash/keccak256.js'
+import { type Blake3ErrorType } from '../../utils/hash/blake3.js'
 import {
   publicKeyToNativeAddress,
   type PublicKeyToNativeAddressErrorType,
 } from './nativeSigner.js'
 export type PublicKeyToAddressErrorType =
   | GetAddressErrorType
-  | Keccak256ErrorType
+  | Blake3ErrorType
   | PublicKeyToNativeAddressErrorType
   | ErrorType
 

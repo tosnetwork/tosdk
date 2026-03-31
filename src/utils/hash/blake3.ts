@@ -1,4 +1,4 @@
-import { keccak_256 } from '@noble/hashes/sha3'
+import { blake3 } from '@noble/hashes/blake3'
 
 import type { ErrorType } from '../../errors/utils.js'
 import type { ByteArray, Hex } from '../../types/misc.js'
@@ -8,24 +8,24 @@ import { type ToHexErrorType, toHex } from '../encoding/toHex.js'
 
 type To = 'hex' | 'bytes'
 
-export type Keccak256Hash<to extends To> =
+export type Blake3Hash<to extends To> =
   | (to extends 'bytes' ? ByteArray : never)
   | (to extends 'hex' ? Hex : never)
 
-export type Keccak256ErrorType =
+export type Blake3ErrorType =
   | IsHexErrorType
   | ToBytesErrorType
   | ToHexErrorType
   | ErrorType
 
-export function keccak256<to extends To = 'hex'>(
+export function blake3Hash<to extends To = 'hex'>(
   value: Hex | ByteArray,
   to_?: to | undefined,
-): Keccak256Hash<to> {
+): Blake3Hash<to> {
   const to = to_ || 'hex'
-  const bytes = keccak_256(
+  const bytes = blake3(
     isHex(value, { strict: false }) ? toBytes(value) : value,
   )
-  if (to === 'bytes') return bytes as Keccak256Hash<to>
-  return toHex(bytes) as Keccak256Hash<to>
+  if (to === 'bytes') return bytes as Blake3Hash<to>
+  return toHex(bytes) as Blake3Hash<to>
 }

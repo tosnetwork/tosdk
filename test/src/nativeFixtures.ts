@@ -105,7 +105,7 @@ export const nativeSignerVectors = {
     publicKey:
       '0x8c9240b456a9e6dc65c377a1048d745f94a08cdb7f44cbcd7b46f34048871134',
     address:
-      '0x068bf56e036ac1261de680eda2611ee30fd0e2c3a89e211d4299f9f75e1d7a85',
+      '0x87759ab545286002d62c36a80e5cc4d6ae675412d12b44be3b99955dca7b59dd',
     signature:
       '0x4f12a0f9d16f93735fd64c7e5ccbc47bd3d83bd7cfe842ecc54df786a599e0041b4557ec2aa7b7dcfba1938d5ffdd4d90f9915bff8cde47e1434701fc3a20201',
   },

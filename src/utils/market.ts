@@ -1,7 +1,7 @@
 import type { MarketBindingReceipt } from '../types/market.js'
 import type { Hex } from '../types/misc.js'
 import { toHex } from './encoding/toHex.js'
-import { keccak256 } from './hash/keccak256.js'
+import { blake3Hash } from './hash/blake3.js'
 
 function sortValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortValue)
@@ -22,7 +22,7 @@ export function canonicalizeMarketBindingValue(value: unknown): string {
 }
 
 export function hashMarketBindingValue(value: unknown): Hex {
-  return keccak256(toHex(canonicalizeMarketBindingValue(value)))
+  return blake3Hash(toHex(canonicalizeMarketBindingValue(value)))
 }
 
 export function canonicalizeMarketBindingReceipt(

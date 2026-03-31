@@ -2,7 +2,7 @@ import { bech32 } from '@scure/base'
 import type { Hex } from '../../types/misc.js'
 import { hexToBytes } from '../encoding/toBytes.js'
 import { bytesToHex } from '../encoding/toHex.js'
-import { keccak256 } from '../hash/keccak256.js'
+import { blake3Hash } from '../hash/blake3.js'
 import { getAddress } from './getAddress.js'
 
 const ACTIVATION_HRP = 'tos'
@@ -14,7 +14,7 @@ const CHECKSUM_LENGTH = 4
  * Encode an activation address from ed25519 public key and ReceiveKey.
  *
  * Format: tos1<bech32(ed25519_pub ++ receive_key ++ checksum)>
- * The checksum is the first 4 bytes of keccak256(ed25519_pub ++ receive_key).
+ * The checksum is the first 4 bytes of blake3(ed25519_pub ++ receive_key).
  *
  * @param ed25519Pubkey - 32-byte ed25519 public key (hex-encoded)
  * @param receiveKey - 32-byte ReceiveKey (ristretto255 point, hex-encoded)
@@ -35,13 +35,13 @@ export function encodeActivationAddress(
     )
   }
 
-  // Compute checksum: first 4 bytes of keccak256(pubkey ++ receiveKey)
+  // Compute checksum: first 4 bytes of blake3(pubkey ++ receiveKey)
   const payload = new Uint8Array(ED25519_PUBKEY_LENGTH + RECEIVE_KEY_LENGTH)
   payload.set(ed25519Pubkey, 0)
   payload.set(receiveKey, ED25519_PUBKEY_LENGTH)
 
   const checksumHash = hexToBytes(
-    keccak256(bytesToHex(payload)),
+    blake3Hash(bytesToHex(payload)),
   )
   const checksum = checksumHash.slice(0, CHECKSUM_LENGTH)
 
@@ -98,7 +98,7 @@ export function decodeActivationAddress(addr: string): {
   payload.set(ed25519Pubkey, 0)
   payload.set(receiveKey, ED25519_PUBKEY_LENGTH)
   const expectedChecksum = hexToBytes(
-    keccak256(bytesToHex(payload)),
+    blake3Hash(bytesToHex(payload)),
   ).slice(0, CHECKSUM_LENGTH)
 
   for (let i = 0; i < CHECKSUM_LENGTH; i++) {
@@ -116,7 +116,7 @@ export function decodeActivationAddress(addr: string): {
 /**
  * Derive on-chain address from an ed25519 public key.
  *
- * The on-chain address is keccak256(pubkey) truncated to 32 bytes,
+ * The on-chain address is blake3(pubkey) truncated to 32 bytes,
  * formatted as a 0x-prefixed hex string.
  *
  * @param ed25519Pubkey - 32-byte ed25519 public key
@@ -128,5 +128,5 @@ export function deriveOnChainAddress(ed25519Pubkey: Uint8Array): Hex {
       `ed25519 public key must be ${ED25519_PUBKEY_LENGTH} bytes, got ${ed25519Pubkey.length}`,
     )
   }
-  return getAddress(keccak256(bytesToHex(ed25519Pubkey))) as Hex
+  return getAddress(blake3Hash(bytesToHex(ed25519Pubkey))) as Hex
 }

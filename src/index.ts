@@ -298,9 +298,9 @@ export {
   type ToHexErrorType,
 } from './utils/encoding/toHex.js'
 export {
-  keccak256,
-  type Keccak256ErrorType,
-} from './utils/hash/keccak256.js'
+  blake3Hash,
+  type Blake3ErrorType,
+} from './utils/hash/blake3.js'
 export {
   canonicalizeArtifactAnchorSummary,
   canonicalizeArtifactValue,

@@ -9,7 +9,7 @@ import { concat } from '../../utils/data/concat.js'
 import { pad } from '../../utils/data/pad.js'
 import { hexToBytes } from '../../utils/encoding/toBytes.js'
 import { bytesToHex } from '../../utils/encoding/toHex.js'
-import { keccak256 } from '../../utils/hash/keccak256.js'
+import { blake3Hash } from '../../utils/hash/blake3.js'
 
 type SignerType = 'ed25519' | 'elgamal'
 
@@ -61,7 +61,7 @@ export function publicKeyToNativeAddress({
   normalizeSignerType(signerType) // validate
   const publicKeyBytes = hexToBytes(publicKey)
   const hashInput = bytesToHex(publicKeyBytes)
-  return getAddress(keccak256(hashInput))
+  return getAddress(blake3Hash(hashInput))
 }
 
 export async function signHash<to extends To = 'object'>({

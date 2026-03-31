@@ -4,9 +4,9 @@ import type {
   TransactionSerialized,
 } from '../../types/transaction.js'
 import {
-  type Keccak256ErrorType,
-  keccak256,
-} from '../../utils/hash/keccak256.js'
+  type Blake3ErrorType,
+  blake3Hash,
+} from '../../utils/hash/blake3.js'
 import {
   type SerializeTransactionFn,
   serializeTransaction,
@@ -27,7 +27,7 @@ export type SignTransactionParameters<
 export type SignTransactionReturnType = TransactionSerialized
 
 export type SignTransactionErrorType =
-  | Keccak256ErrorType
+  | Blake3ErrorType
   | SignErrorType
   | ErrorType
 
@@ -45,7 +45,7 @@ export async function signTransaction<
   } = parameters
 
   const signature = await sign({
-    hash: keccak256(await serializer(transaction as any)),
+    hash: blake3Hash(await serializer(transaction as any)),
     privateKey,
     signerType,
   })

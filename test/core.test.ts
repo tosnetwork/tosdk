@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { defineChain, keccak256, parseUnits, toBytes, toHex } from 'tosdk'
+import { defineChain, blake3Hash, parseUnits, toBytes, toHex } from 'tosdk'
 import { tos, tosTestnet } from 'tosdk/chains'
 
 test('toHex and toBytes encode basic values', () => {
@@ -9,9 +9,9 @@ test('toHex and toBytes encode basic values', () => {
   expect(toHex(true, { size: 1 })).toBe('0x01')
 })
 
-test('keccak256 hashes byte-compatible values', () => {
-  expect(keccak256('0x68656c6c6f')).toBe(
-    '0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8',
+test('blake3Hash hashes byte-compatible values', () => {
+  expect(blake3Hash('0x68656c6c6f')).toBe(
+    '0xea8f163db38682925e4491c5e58d4bb3506ef8c14eb78a86e908c5624a67200f',
   )
 })
 

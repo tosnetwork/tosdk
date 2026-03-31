@@ -1,4 +1,4 @@
-import { keccak256 } from './hash/keccak256.js'
+import { blake3Hash } from './hash/blake3.js'
 import { toHex } from './encoding/toHex.js'
 import type {
   ArtifactAnchorSummary,
@@ -25,7 +25,7 @@ export function canonicalizeArtifactValue(value: unknown): string {
 }
 
 export function hashArtifactValue(value: unknown): Hex {
-  return keccak256(toHex(canonicalizeArtifactValue(value)))
+  return blake3Hash(toHex(canonicalizeArtifactValue(value)))
 }
 
 export function canonicalizeArtifactAnchorSummary(

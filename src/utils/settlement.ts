@@ -1,7 +1,7 @@
 import type { SettlementReceipt } from '../types/settlement.js'
 import type { Hex } from '../types/misc.js'
 import { toHex } from './encoding/toHex.js'
-import { keccak256 } from './hash/keccak256.js'
+import { blake3Hash } from './hash/blake3.js'
 
 function sortValue(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -31,7 +31,7 @@ export function canonicalizeSettlementValue(value: unknown): string {
 }
 
 export function hashSettlementValue(value: unknown): Hex {
-  return keccak256(toHex(canonicalizeSettlementValue(value)))
+  return blake3Hash(toHex(canonicalizeSettlementValue(value)))
 }
 
 export function canonicalizeSettlementReceipt(
